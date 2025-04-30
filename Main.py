@@ -5,7 +5,7 @@ from dotenv import load_dotenv # type: ignore
 import os
 
 # Lade die Umgebungsvariablen aus der .env-Datei
-load_dotenv(r"C:\Users\Anwender\Desktop\DiscordBot\Token.env")
+load_dotenv()
 
 
 
