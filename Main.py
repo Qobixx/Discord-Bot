@@ -15,7 +15,7 @@ TOKEN = os.getenv("DISCORD_TOKEN")
 # Intents (wichtig für Prefix-Commands & Modals)
 intents = discord.Intents.default()
 intents.message_content = True
-bot = commands.Bot(command_prefix="_", intents=intents)
+bot = commands.Bot(command_prefix="!", intents=intents)
 
 # Feedback-Modal
 class FeedbackModal(Modal):
