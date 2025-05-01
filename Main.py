@@ -14,8 +14,11 @@ load_dotenv()
 # Hole den Token aus der Umgebungsvariable
 TOKEN = os.getenv("DISCORD_TOKEN")
 WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
-bot = commands.Bot(command_prefix="!", intents=intents)
 
+# Discord Bot
+intents = discord.Intents.default()
+intents.message_content = True
+bot = commands.Bot(command_prefix="!", intents=intents)
 
 # Wetterdaten für 4 Tage abrufen
 def get_4_day_forecast(city):
