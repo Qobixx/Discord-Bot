@@ -4,7 +4,9 @@ from discord.ui import Button, View, Modal, TextInput
 from dotenv import load_dotenv
 import os
 import requests
-from datetime import datetime
+import time
+import datetime
+from datetime import datetime as dt  # für Datumsausgabe
 
 # Lade die Umgebungsvariablen aus der .env-Datei
 load_dotenv()
@@ -20,6 +22,9 @@ intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
+# Startzeitpunkt für Uptime
+start_time = time.time()
+
 # Wetterdaten für 4 Tage abrufen
 def get_4_day_forecast(city):
     url = f"http://api.openweathermap.org/data/2.5/forecast?q={city}&appid={WEATHER_API_KEY}&units=metric&lang=de"
@@ -32,7 +37,7 @@ def get_4_day_forecast(city):
     for entry in data["list"]:
         dt_txt = entry["dt_txt"]
         if "12:00:00" in dt_txt:  # nur die Mittagsdaten (1x pro Tag)
-            day = datetime.strptime(dt_txt, "%Y-%m-%d %H:%M:%S").strftime("%A, %d.%m.")
+            day = dt.strptime(dt_txt, "%Y-%m-%d %H:%M:%S").strftime("%A, %d.%m.")
             temp = entry["main"]["temp"]
             desc = entry["weather"][0]["description"].capitalize()
             icon = entry["weather"][0]["icon"]
@@ -59,7 +64,7 @@ class WeatherModal(Modal):
         embed = discord.Embed(title=f"📅 Wetter für {city_name.title()} – 4 Tage Vorschau", color=0x1abc9c)
         for day, temp, desc, icon_url in forecast:
             embed.add_field(name=day, value=f"{desc}, **{temp:.1f}°C**", inline=False)
-            embed.set_thumbnail(url=forecast[0][3])  # Icon vom ersten Tag
+        embed.set_thumbnail(url=forecast[0][3])  # Icon vom ersten Tag
 
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
@@ -75,6 +80,13 @@ async def wetter(ctx):
 
     btn.callback = button_callback
     await ctx.send("🌤️ Klicke auf den Button, um eine Wettervorhersage zu bekommen:", view=view)
+
+# Uptime-Befehl
+@bot.command()
+async def time(ctx):
+    uptime_seconds = time.time() - start_time
+    uptime_string = str(datetime.timedelta(seconds=int(uptime_seconds)))
+    await ctx.send(f"🕒 Der Raspberry Pi läuft seit: **{uptime_string}**")
 
 # Bot gestartet
 @bot.event
