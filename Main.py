@@ -3,6 +3,8 @@ from discord.ext import commands
 from discord.ui import Button, View, Modal, TextInput
 from dotenv import load_dotenv
 import os
+import requests
+from datetime import datetime
 import yt_dlp as youtube_dl
 import asyncio
 
@@ -48,31 +50,6 @@ class YTDLSource(discord.PCMVolumeTransformer):
             source = await discord.FFmpegOpusAudio.from_probe(url2)
             return cls(source, data=info)
 
-# Bot-Befehl für YouTube-Audio
-@bot.command()
-async def play(ctx, url: str):
-    """Spielt ein YouTube-Video im Voice Channel."""
-    if not ctx.message.author.voice:
-        await ctx.send("Du musst in einem Voice Channel sein, um Musik zu hören.")
-        return
-
-    channel = ctx.message.author.voice.channel
-    voice_client = await channel.connect()
-
-    # Lade die Audioquelle von YouTube
-    player = await YTDLSource.from_url(url, loop=bot.loop, stream=True)
-    
-    # Spiele die Audioquelle
-    voice_client.play(player, after=lambda e: print('done', e))
-
-    await ctx.send(f"Spiele jetzt: {player.title}")
-
-    # Wenn das Audio zu Ende ist, trenne die Verbindung nach 5 Sekunden
-    while voice_client.is_playing():
-        await asyncio.sleep(1)
-
-    await voice_client.disconnect()
-
 # Wetterdaten für 4 Tage abrufen
 def get_4_day_forecast(city):
     url = f"http://api.openweathermap.org/data/2.5/forecast?q={city}&appid={WEATHER_API_KEY}&units=metric&lang=de"
@@ -95,7 +72,7 @@ def get_4_day_forecast(city):
                 break
     return forecast
 
-# Modal für Stadteingabe (Wetter)
+# Modal für Stadteingabe
 class WeatherModal(Modal):
     def __init__(self):
         super().__init__(title="🌦️ Wettervorhersage")
@@ -116,9 +93,57 @@ class WeatherModal(Modal):
 
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
-# Button anzeigen für Wetter
+# Modal für YouTube-Link-Eingabe
+class YouTubeModal(Modal):
+    def __init__(self):
+        super().__init__(title="🎶 YouTube-Video abspielen")
+        self.url = TextInput(label="YouTube Link", placeholder="Füge den YouTube-Link ein")
+        self.add_item(self.url)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        url = self.url.value.strip()
+        if not url:
+            await interaction.response.send_message("❌ Du hast keinen Link angegeben!", ephemeral=True)
+            return
+
+        if not url.startswith("https://www.youtube.com/"):
+            await interaction.response.send_message("❌ Ungültiger YouTube-Link!", ephemeral=True)
+            return
+
+        # Starte die Wiedergabe im Voice-Channel
+        await play_audio(interaction, url)
+
+# Funktion zum Abspielen des YouTube-Audios
+async def play_audio(interaction, url):
+    # Überprüfen, ob der Benutzer im Voice-Channel ist
+    if not interaction.user.voice:
+        await interaction.response.send_message("❌ Du musst in einem Voice-Channel sein, um Musik zu hören.")
+        return
+
+    # Voice-Channel betreten
+    channel = interaction.user.voice.channel
+    voice_client = await channel.connect()
+
+    # Lade die Audioquelle von YouTube
+    player = await YTDLSource.from_url(url, loop=bot.loop, stream=True)
+    
+    # Spiele das Audio ab
+    voice_client.play(player, after=lambda e: print('done', e))
+
+    await interaction.response.send_message(f"Spiele jetzt: {player.title}")
+
+    # Wenn das Audio zu Ende ist, trenne die Verbindung nach 5 Sekunden
+    while voice_client.is_playing():
+        await asyncio.sleep(1)
+
+    await voice_client.disconnect()
+
+# Wetterbefehl
 @bot.command()
 async def wetter(ctx):
+    """Öffnet ein Modal für die Wetterabfrage."""
+    await ctx.send("🌤️ Klicke auf den Button, um eine Wettervorhersage zu bekommen:")
+
     btn = Button(label="Wetter abfragen", style=discord.ButtonStyle.primary)
     view = View()
     view.add_item(btn)
@@ -127,7 +152,25 @@ async def wetter(ctx):
         await interaction.response.send_modal(WeatherModal())
 
     btn.callback = button_callback
-    await ctx.send("🌤️ Klicke auf den Button, um eine Wettervorhersage zu bekommen:", view=view)
+    await ctx.send("Klicke auf den Button, um eine Wettervorhersage zu bekommen:", view=view)
+
+# Playbefehl für YouTube-Video
+@bot.command()
+async def play(ctx):
+    """Öffnet ein Modal, um den YouTube-Link einzugeben."""
+    await ctx.send("🎶 Klicke auf den Button, um den YouTube-Link einzugeben:")
+
+    # Button zum Öffnen des Modal
+    btn = Button(label="YouTube-Link eingeben", style=discord.ButtonStyle.primary)
+    view = View()
+    view.add_item(btn)
+
+    # Button Callback, öffnet das Modal
+    async def button_callback(interaction: discord.Interaction):
+        await interaction.response.send_modal(YouTubeModal())
+
+    btn.callback = button_callback
+    await ctx.send("Klicke auf den Button, um einen YouTube-Link einzugeben:", view=view)
 
 # Bot gestartet
 @bot.event
