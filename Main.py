@@ -86,7 +86,7 @@ async def wetter(ctx):
 async def time(ctx):
     uptime_seconds = time.time() - start_time
     uptime_string = str(datetime.timedelta(seconds=int(uptime_seconds)))
-    await ctx.send(f"🕒 Der Raspberry Pi läuft seit: **{uptime_string}**")
+    await ctx.send(f"🕒 Bot läuft seit: **{uptime_string}**")
 
 # Bot gestartet
 @bot.event
