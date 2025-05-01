@@ -1,8 +1,9 @@
 import discord
 from discord.ext import commands
 from discord.ui import Button, View, Modal, TextInput
-from dotenv import load_dotenv # type: ignore
+from dotenv import load_dotenv
 import os
+import requests
 
 # Lade die Umgebungsvariablen aus der .env-Datei
 load_dotenv()
@@ -11,61 +12,56 @@ load_dotenv()
 
 # Hole den Token aus der Umgebungsvariable
 TOKEN = os.getenv("DISCORD_TOKEN")
+WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
+
 
 # Intents (wichtig für Prefix-Commands & Modals)
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# Feedback-Modal
-class FeedbackModal(Modal):
+# Wetterdaten abrufen
+def get_weather(city: str):
+    url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={WEATHER_API_KEY}&units=metric&lang=de"
+    response = requests.get(url)
+    if response.status_code != 200:
+        return None
+    data = response.json()
+    weather = data["weather"][0]["description"]
+    temp = data["main"]["temp"]
+    return f"🌤️ Wetter in {city.title()}: {weather}, {temp}°C"
+
+# Modal zur Stadteingabe
+class WeatherModal(Modal):
     def __init__(self):
-        super().__init__(title="📝 Feedbackbogen")
-        self.subject = TextInput(label="Betreff", placeholder="Worum geht's?")
-        self.feedback = TextInput(label="Dein Feedback",
-                                  style=discord.TextStyle.paragraph,
-                                  placeholder="Schreibe hier dein Feedback…")
-        self.add_item(self.subject)
-        self.add_item(self.feedback)
+        super().__init__(title="🌦️ Wetter abfragen")
+        self.city = TextInput(label="Stadtname", placeholder="z. B. Berlin")
+        self.add_item(self.city)
 
     async def on_submit(self, interaction: discord.Interaction):
-        # 1) Ephemeral-Bestätigung an den Einreicher
-        await interaction.response.send_message("Danke für dein Feedback! 👍",
-                                                ephemeral=True)
+        city_name = self.city.value.strip()
+        result = get_weather(city_name)
+        if result:
+            await interaction.response.send_message(result, ephemeral=True)
+        else:
+            await interaction.response.send_message("❌ Stadt nicht gefunden oder API-Fehler.", ephemeral=True)
 
-        # 2) Feedback als DM an den Server-Owner senden
-        guild = interaction.guild
-        owner_id = guild.owner_id  # ermittelt automatisch die Owner-ID
-        owner = await bot.fetch_user(owner_id)  # User-Objekt des Owners
-        await owner.send(
-            f"📥 **Neues Feedback**\n"
-            f"• **Von:** {interaction.user} (ID: {interaction.user.id})\n"
-            f"• **Rolle:** {interaction.user.top_role.name}\n"          # top_role = höchste Rolle des Users
-            f"• **Betreff:** {self.subject.value}\n"
-            f"• **Feedback:**\n> {self.feedback.value}")
-
-
-# Command, der den Feedback-Button ausgibt
+# Befehl zum Anzeigen des Buttons
 @bot.command()
-async def feedback(ctx):
-    btn = Button(label="Feedback ausfüllen",
-                 style=discord.ButtonStyle.primary,
-                 custom_id="open_feedback")
+async def wetter(ctx):
+    btn = Button(label="Wetter abfragen", style=discord.ButtonStyle.primary)
     view = View()
     view.add_item(btn)
 
-    async def open_modal(interaction: discord.Interaction):
-        await interaction.response.send_modal(FeedbackModal())
+    async def button_callback(interaction: discord.Interaction):
+        await interaction.response.send_modal(WeatherModal())
 
-    btn.callback = open_modal
+    btn.callback = button_callback
+    await ctx.send("Klicke auf den Button, um das Wetter abzufragen:", view=view)
 
-    await ctx.send("Klicke auf den Button, um den Feedbackbogen zu öffnen:",
-                   view=view)
-
-
+# Bot-Start
 @bot.event
 async def on_ready():
-    print(f"Eingeloggt als {bot.user}")
-
+    print(f"✅ Bot gestartet als {bot.user}")
 
 bot.run(TOKEN)
