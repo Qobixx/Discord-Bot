@@ -3,8 +3,8 @@ from discord.ext import commands
 from discord.ui import Button, View, Modal, TextInput
 from dotenv import load_dotenv
 import os
-import requests
-from datetime import datetime
+import yt_dlp as youtube_dl
+import asyncio
 
 # Lade die Umgebungsvariablen aus der .env-Datei
 load_dotenv()
@@ -19,6 +19,59 @@ WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
+
+# Audio-Setup für yt-dlp und Voice-Channel
+class YTDLSource(discord.PCMVolumeTransformer):
+    def __init__(self, source, *, data, volume=0.5):
+        super().__init__(source, volume)
+        self.data = data
+        self.title = data.get('title')
+        self.url = data.get('url')
+
+    @classmethod
+    async def from_url(cls, url, *, loop=None, stream=False):
+        ydl_opts = {
+            'format': 'bestaudio/best',
+            'extractaudio': True,
+            'audioquality': 1,
+            'outtmpl': 'downloads/%(id)s.%(ext)s',
+            'restrictfilenames': True,
+            'noplaylist': True,
+            'quiet': True,
+        }
+        loop = loop or asyncio.get_event_loop()
+
+        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=False)
+            url2 = info['formats'][0]['url']
+            title = info.get('title')
+            source = await discord.FFmpegOpusAudio.from_probe(url2)
+            return cls(source, data=info)
+
+# Bot-Befehl für YouTube-Audio
+@bot.command()
+async def play(ctx, url: str):
+    """Spielt ein YouTube-Video im Voice Channel."""
+    if not ctx.message.author.voice:
+        await ctx.send("Du musst in einem Voice Channel sein, um Musik zu hören.")
+        return
+
+    channel = ctx.message.author.voice.channel
+    voice_client = await channel.connect()
+
+    # Lade die Audioquelle von YouTube
+    player = await YTDLSource.from_url(url, loop=bot.loop, stream=True)
+    
+    # Spiele die Audioquelle
+    voice_client.play(player, after=lambda e: print('done', e))
+
+    await ctx.send(f"Spiele jetzt: {player.title}")
+
+    # Wenn das Audio zu Ende ist, trenne die Verbindung nach 5 Sekunden
+    while voice_client.is_playing():
+        await asyncio.sleep(1)
+
+    await voice_client.disconnect()
 
 # Wetterdaten für 4 Tage abrufen
 def get_4_day_forecast(city):
@@ -42,7 +95,7 @@ def get_4_day_forecast(city):
                 break
     return forecast
 
-# Modal für Stadteingabe
+# Modal für Stadteingabe (Wetter)
 class WeatherModal(Modal):
     def __init__(self):
         super().__init__(title="🌦️ Wettervorhersage")
@@ -63,7 +116,7 @@ class WeatherModal(Modal):
 
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
-# Button anzeigen
+# Button anzeigen für Wetter
 @bot.command()
 async def wetter(ctx):
     btn = Button(label="Wetter abfragen", style=discord.ButtonStyle.primary)
