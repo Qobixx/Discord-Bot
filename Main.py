@@ -42,7 +42,15 @@ class ZutatSelect(Select):
 
     async def callback(self, interaction: discord.Interaction):
         self.ingredient = self.values[0]  # Die ausgewählte Zutat speichern
-        # Berechnung der Gesamtkosten und Preise
+        await interaction.response.send_message(f"Du hast die Zutat **{self.ingredient}** ausgewählt! Klicke auf 'Berechnen', um die Gesamtkosten und den Gesamtpreis zu berechnen.", ephemeral=True)
+
+# Button für die Berechnung
+class CalculateButton(Button):
+    def __init__(self):
+        super().__init__(label="Berechnen", style=discord.ButtonStyle.success)
+
+    async def callback(self, interaction: discord.Interaction):
+        # Berechnung des Gesamtpreises und der Gesamtkosten
         product_cost = produkte[self.product]["cost"]
         product_price = produkte[self.product]["price"]
         ingredient_cost = zutaten[self.ingredient]["cost"]
@@ -74,14 +82,16 @@ async def mix(ctx):
     async def button_callback(interaction: discord.Interaction):
         produkt_select = ProduktSelect()
         zutat_select = ZutatSelect()
+        calculate_button = CalculateButton()  # Berechnen Button hinzufügen
         
-        # Eine neue View für die Auswahl von Produkt und Zutat
+        # Eine neue View für die Auswahl von Produkt und Zutat sowie den Berechnen Button
         view = View()
         view.add_item(produkt_select)
         view.add_item(zutat_select)
-        
+        view.add_item(calculate_button)  # Berechnen Button
+
         # Zeige die Auswahl
-        await interaction.response.send_message("Wähle ein Produkt und eine Zutat:", view=view)
+        await interaction.response.send_message("Wähle ein Produkt und eine Zutat, und klicke auf 'Berechnen', um die Preise zu sehen:", view=view)
 
     button.callback = button_callback
 
