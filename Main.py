@@ -2,8 +2,8 @@ import discord
 from discord.ext import commands
 from discord.ui import Modal, TextInput, View
 from discord import app_commands
-from dotenv import load_dotenv
 import os
+from dotenv import load_dotenv
 
 # .env laden
 load_dotenv()
