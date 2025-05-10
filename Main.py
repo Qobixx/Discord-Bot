@@ -3,7 +3,6 @@ from discord.ext import commands
 from discord.ui import Button, View, Select
 from dotenv import load_dotenv
 import os
-import asyncio
 
 # .env laden
 load_dotenv()
@@ -36,11 +35,7 @@ class ProduktSelect(Select):
         # Produktwert speichern, wenn es ausgewählt wird
         self.view.selected_product = self.values[0]  # Speichern der Auswahl
         # Nachricht senden, welche Auswahl getroffen wurde
-        message = await interaction.response.send_message(f"Du hast das Produkt **{self.view.selected_product}** ausgewählt.", ephemeral=True)
-        
-        # Löschen der Nachricht nach 3 Sekunden
-        await asyncio.sleep(3)
-        await message.delete()
+        await interaction.response.send_message(f"Du hast das Produkt **{self.view.selected_product}** ausgewählt.", ephemeral=True)
 
 
 # Funktionsweise der Auswahl für Zutaten
@@ -53,11 +48,7 @@ class ZutatSelect(Select):
         # Zutatwert speichern, wenn es ausgewählt wird
         self.view.selected_ingredient = self.values[0]  # Speichern der Auswahl
         # Nachricht senden, welche Auswahl getroffen wurde
-        message = await interaction.response.send_message(f"Du hast die Zutat **{self.view.selected_ingredient}** ausgewählt.", ephemeral=True)
-        
-        # Löschen der Nachricht nach 3 Sekunden
-        await asyncio.sleep(3)
-        await message.delete()
+        await interaction.response.send_message(f"Du hast die Zutat **{self.view.selected_ingredient}** ausgewählt.", ephemeral=True)
 
 
 # Berechnen-Button
