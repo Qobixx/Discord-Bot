@@ -98,22 +98,7 @@ async def mix(ctx):
         selection_view.add_item(zutat_select)
         selection_view.add_item(calculate_button)
 
-        # Warte darauf, dass der Benutzer eine Auswahl trifft, bevor der "Berechnen"-Button aktiv wird
         await interaction.response.send_message("Wähle ein Produkt und eine oder mehrere Zutaten, dann klicke auf 'Berechnen':", view=selection_view)
-
-        # Warten auf eine Interaktion mit dem Produktselect, bevor wir mit der Berechnung fortfahren
-        def check(interaction):
-            return interaction.user == ctx.author and interaction.data.get("type") == 3  # Nur der Benutzer, der den Befehl ausgeführt hat
-
-        # Wenn eine Auswahl getroffen wurde, setze die Produkt- und Zutatenauswahl
-        await bot.wait_for('interaction', check=check)
-
-        if produkt_select.values and zutat_select.values:
-            calculate_button.product = produkt_select.values[0]  # Produkt aus der Auswahl
-            calculate_button.zutaten = zutat_select.values  # Zutaten aus der Auswahl
-        else:
-            await interaction.response.send_message("Bitte wähle ein Produkt und mindestens eine Zutat aus.", ephemeral=True)
-            return
 
     # Setzen des button_callback für den Button
     button.callback = button_callback
