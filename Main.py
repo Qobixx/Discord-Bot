@@ -56,29 +56,24 @@ class ZutatSelect(Select):
 class CalculateButton(Button):
     def __init__(self):
         super().__init__(label="Berechnen", style=discord.ButtonStyle.success)
-    # Berechnung durchführen, wenn der "Berechnen"-Button gedrückt wird
-    async def calculate_callback(interaction: discord.Interaction):
+
+    async def callback(self, interaction: discord.Interaction):
         # Überprüfen, ob sowohl Produkt als auch Zutaten ausgewählt wurden
-        if not hasattr(produkt_select, 'values') or not hasattr(zutat_select, 'values'):
+        if not hasattr(self, 'product') or not hasattr(self, 'zutaten'):
             await interaction.response.send_message("Bitte wähle sowohl ein Produkt als auch eine Zutat aus, bevor du auf 'Berechnen' klickst.", ephemeral=True)
             return
 
-        # Die Produkt- und Zutatenauswahl wird in der Berechnung berücksichtigt
-        product = produkt_select.values[0]
-        zutaten = zutat_select.values
-
         # Berechnung des Gesamtpreises
-        product_cost = produkte[product]["cost"]
+        product_cost = produkte[self.product]["cost"]
         total_cost = product_cost
-    
+
         # Addiere die Kosten für die Zutaten
-        for zutat in zutaten:
+        for zutat in self.zutaten:
             if zutat in zutaten:  # Zugriff auf die Zutat im zutaten Dictionary
-                total_cost += zutaten[zutat]["cost"]  # Dies funktioniert hier nicht richtig!
+                total_cost += zutaten[zutat]["cost"]
 
         # Gesamtkosten anzeigen
         await interaction.response.send_message(f"Die Gesamtkosten betragen {total_cost}€.", ephemeral=True)
-
 
 
 # !mix Befehl
@@ -97,37 +92,16 @@ async def mix(ctx):
         zutat_select = ZutatSelect()
         calculate_button = CalculateButton()
 
+        # Setze die Auswahlmöglichkeiten (Produkt und Zutaten) für den Button
+        calculate_button.product = produkt_select.values[0]  # Produkt aus der Auswahl
+        calculate_button.zutaten = zutat_select.values  # Zutaten aus der Auswahl
+
         # View für Produkt- und Zutatenauswahl
         selection_view = View()
         selection_view.add_item(produkt_select)
         selection_view.add_item(zutat_select)
         selection_view.add_item(calculate_button)
 
-        async def calculate_callback(interaction: discord.Interaction):
-    # Überprüfen, ob sowohl Produkt als auch Zutaten ausgewählt wurden
-    if not hasattr(produkt_select, 'values') or not hasattr(zutat_select, 'values'):
-        await interaction.response.send_message("Bitte wähle sowohl ein Produkt als auch eine Zutat aus, bevor du auf 'Berechnen' klickst.", ephemeral=True)
-        return
-
-    # Die Produkt- und Zutatenauswahl wird in der Berechnung berücksichtigt
-    product = produkt_select.values[0]
-    zutaten = zutat_select.values
-
-    # Berechnung des Gesamtpreises
-    product_cost = produkte[product]["cost"]
-    total_cost = product_cost
-
-    # Addiere die Kosten für die Zutaten
-    for zutat_name in zutaten:  # Gehe durch jede ausgewählte Zutat
-        total_cost += zutaten[zutat_name]["cost"]  # Zugriff auf die Zutat im zutaten Dictionary
-
-    # Gesamtkosten anzeigen
-    await interaction.response.send_message(f"Die Gesamtkosten betragen {total_cost}€.", ephemeral=True)
-
-
-        # Setzen des calculate_callback für den Button
-        calculate_button.callback = calculate_callback
-        
         await interaction.response.send_message("Wähle ein Produkt und eine oder mehrere Zutaten, dann klicke auf 'Berechnen':", view=selection_view)
 
     # Setzen des button_callback für den Button
