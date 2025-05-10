@@ -59,16 +59,16 @@ class CalculateButton(Button):
 
     async def callback(self, interaction: discord.Interaction):
         # Berechnung des Gesamtpreises
-        if not hasattr(self, 'product') or not hasattr(self, 'zutaten'):
+        if not hasattr(self.view, 'product') or not hasattr(self.view, 'zutaten'):
             await interaction.response.send_message("Bitte wähle sowohl ein Produkt als auch eine Zutat aus, bevor du auf 'Berechnen' klickst.", ephemeral=True)
             return
         
         # Berechne die Gesamtkosten
-        product_cost = produkte[self.product]["cost"]
+        product_cost = produkte[self.view.product]["cost"]
         total_cost = product_cost
         
         # Kosten für jede ausgewählte Zutat
-        for zutat in self.zutaten:
+        for zutat in self.view.zutaten:
             # Zugriff auf die Kosten der Zutat im zutaten Dictionary
             if zutat in zutaten:
                 total_cost += zutaten[zutat]["cost"]
