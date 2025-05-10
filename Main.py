@@ -39,15 +39,15 @@ class ProduktSelect(Select):
         await interaction.response.send_message(f"Du hast das Produkt '{self.product}' ausgewählt.", ephemeral=True)
 
 
-# Zutatenauswahl ohne mehrere Auswahlmöglichkeiten
+# Zutatenauswahl mit mehreren Auswahlmöglichkeiten
 class ZutatSelect(Select):
     def __init__(self):
         options = [discord.SelectOption(label=zutat, value=zutat) for zutat in zutaten]
-        super().__init__(placeholder="Wähle eine Zutat", options=options)
+        super().__init__(placeholder="Wähle eine oder mehrere Zutaten", options=options, min_values=1, max_values=len(zutaten))
 
     async def callback(self, interaction: discord.Interaction):
-        self.zutat = self.values[0]
-        await interaction.response.send_message(f"Du hast die Zutat '{self.zutat}' ausgewählt.", ephemeral=True)
+        self.zutaten = self.values
+        await interaction.response.send_message(f"Du hast die Zutaten {', '.join(self.zutaten)} ausgewählt.", ephemeral=True)
 
 
 # !mix Befehl
@@ -61,7 +61,7 @@ async def mix(ctx):
     view.add_item(button)
 
     async def button_callback(interaction: discord.Interaction):
-        # Dropdown-Menü für Produkte und Zutaten
+        # Dropdown-Menü für Produkt und Zutaten
         produkt_select = ProduktSelect()
         zutat_select = ZutatSelect()
 
@@ -70,7 +70,7 @@ async def mix(ctx):
         view.add_item(produkt_select)
         view.add_item(zutat_select)
 
-        await interaction.response.send_message("Wähle ein Produkt und eine Zutat:", view=view)
+        await interaction.response.send_message("Wähle ein Produkt und eine oder mehrere Zutaten:", view=view)
 
     button.callback = button_callback
 
