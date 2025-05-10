@@ -66,3 +66,22 @@ class CalculateButton(Button):
 
 @bot.command()
 async def mix(ctx):
+    # Hier fügst du jetzt die GUI für den Benutzer hinzu
+    view = View()
+    product_select = ProductSelect()
+    substance_select = SubstanceSelect()
+    calculate_button = CalculateButton()
+
+    # Füge die GUI-Elemente zur Ansicht hinzu
+    view.add_item(product_select)
+    view.add_item(substance_select)
+    view.add_item(calculate_button)
+
+    # Sende die Nachricht im Discord-Chat mit der GUI
+    await ctx.send("Wähle ein Produkt und die Zutaten aus, um den Preis zu berechnen:", view=view)
+
+@bot.event
+async def on_ready():
+    print(f"Bot ist online als {bot.user}")
+
+bot.run(TOKEN)
