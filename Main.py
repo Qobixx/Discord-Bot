@@ -36,7 +36,11 @@ class ProduktSelect(Select):
         # Produktwert speichern, wenn es ausgewählt wird
         self.view.selected_product = self.values[0]  # Speichern der Auswahl
         # Nachricht senden, welche Auswahl getroffen wurde
-        await interaction.response.send_message(f"Du hast das Produkt **{self.view.selected_product}** ausgewählt.", ephemeral=True)
+        message = await interaction.response.send_message(f"Du hast das Produkt **{self.view.selected_product}** ausgewählt.", ephemeral=True)
+        
+        # Löschen der Nachricht nach 3 Sekunden
+        await asyncio.sleep(3)
+        await message.delete()
 
 
 # Funktionsweise der Auswahl für Zutaten
@@ -49,7 +53,11 @@ class ZutatSelect(Select):
         # Zutatwert speichern, wenn es ausgewählt wird
         self.view.selected_ingredient = self.values[0]  # Speichern der Auswahl
         # Nachricht senden, welche Auswahl getroffen wurde
-        await interaction.response.send_message(f"Du hast die Zutat **{self.view.selected_ingredient}** ausgewählt.", ephemeral=True)
+        message = await interaction.response.send_message(f"Du hast die Zutat **{self.view.selected_ingredient}** ausgewählt.", ephemeral=True)
+        
+        # Löschen der Nachricht nach 3 Sekunden
+        await asyncio.sleep(3)
+        await message.delete()
 
 
 # Berechnen-Button
