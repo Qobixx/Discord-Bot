@@ -64,7 +64,7 @@ class ZutatSelect(Select):
 @bot.command()
 async def mix(ctx):
     # Button erstellen
-    button = Button(label="Wähle ein Produkt!", style=discord.ButtonStyle.primary)
+    button = Button(label="Wähle ein Produkt und eine Zutat!", style=discord.ButtonStyle.primary)
 
     # View erstellen und den Button hinzufügen
     view = View()
@@ -73,14 +73,20 @@ async def mix(ctx):
     # Wenn der Button geklickt wird, zeige die Produkt- und Zutatenauswahl an
     async def button_callback(interaction: discord.Interaction):
         produkt_select = ProduktSelect()
+        zutat_select = ZutatSelect()
+        
+        # Eine neue View für die Auswahl von Produkt und Zutat
         view = View()
         view.add_item(produkt_select)
-        await interaction.response.send_message("Wähle ein Produkt:", view=view)
+        view.add_item(zutat_select)
+        
+        # Zeige die Auswahl
+        await interaction.response.send_message("Wähle ein Produkt und eine Zutat:", view=view)
 
     button.callback = button_callback
 
     # Sende eine Nachricht mit dem Button
-    await ctx.send("Klicke den Button, um ein Produkt auszuwählen:", view=view)
+    await ctx.send("Klicke den Button, um ein Produkt und eine Zutat auszuwählen:", view=view)
 
 @bot.event
 async def on_ready():
