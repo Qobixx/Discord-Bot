@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from discord.ui import Button, View, Select, SelectOption  # Korrigierter Import
+from discord.ui import Button, View, Select  # Entferne SelectOption
 import requests
 import os
 from dotenv import load_dotenv
@@ -12,7 +12,7 @@ FLASK_API_URL = "http://localhost:5000/calculate"  # Flask-API URL
 
 bot = commands.Bot(command_prefix="!", intents=discord.Intents.default())
 
-# Produkt- und Substanz-Optionen
+# Produkt- und Substanz-Optionen (direkt definieren, ohne SelectOption)
 product_options = [
     discord.SelectOption(label="OG Kush", value="OgKush"),
     discord.SelectOption(label="Meth", value="Meth"),
@@ -31,7 +31,6 @@ class ProductSelect(Select):
         super().__init__(placeholder="Wähle ein Produkt", options=product_options)
 
     async def callback(self, interaction: discord.Interaction):
-        # Wir speichern das ausgewählte Produkt für spätere Auswahl
         interaction.user.selected_product = self.values[0]
         await interaction.response.send_message(f"Produkt {self.values[0]} ausgewählt!", ephemeral=True)
 
