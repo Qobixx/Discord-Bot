@@ -35,7 +35,8 @@ class ProduktSelect(Select):
     async def callback(self, interaction: discord.Interaction):
         # Produktwert speichern, wenn es ausgewählt wird
         self.view.selected_product = self.values[0]  # Speichern der Auswahl
-        # Keine Nachricht senden, keine Reaktion
+        # Nachricht senden, welche Auswahl getroffen wurde
+        await interaction.response.send_message(f"Du hast das Produkt **{self.view.selected_product}** ausgewählt.", ephemeral=True)
 
 
 # Funktionsweise der Auswahl für Zutaten
@@ -47,7 +48,8 @@ class ZutatSelect(Select):
     async def callback(self, interaction: discord.Interaction):
         # Zutatwert speichern, wenn es ausgewählt wird
         self.view.selected_ingredient = self.values[0]  # Speichern der Auswahl
-        # Keine Nachricht senden, keine Reaktion
+        # Nachricht senden, welche Auswahl getroffen wurde
+        await interaction.response.send_message(f"Du hast die Zutat **{self.view.selected_ingredient}** ausgewählt.", ephemeral=True)
 
 
 # Berechnen-Button
@@ -58,13 +60,10 @@ class CalculateButton(Button):
     async def callback(self, interaction: discord.Interaction):
         # Überprüfen, ob sowohl Produkt als auch Zutat ausgewählt wurden
         if not hasattr(self.view, "selected_product") or not hasattr(self.view, "selected_ingredient"):
-            # Wenn nicht beide ausgewählt sind, eine Nachricht senden und diese löschen
-            no_selection_msg = await interaction.response.send_message(
+            await interaction.response.send_message(
                 "Bitte wähle sowohl ein Produkt als auch eine Zutat aus, bevor du auf 'Berechnen' klickst.",
                 ephemeral=True
             )
-            await asyncio.sleep(3)
-            await no_selection_msg.delete()
             return
 
         product = self.view.selected_product
@@ -80,16 +79,11 @@ class CalculateButton(Button):
         total_cost = product_cost + ingredient_cost
         total_price = product_price + ingredient_price
 
-        # Berechnete Werte zurückgeben und alle anderen Nachrichten löschen
-        result_msg = await interaction.response.send_message(
+        # Berechnete Werte zurückgeben
+        await interaction.response.send_message(
             f"Du hast das Produkt **{product}** und die Zutat **{ingredient}** ausgewählt.\n"
             f"Gesamtkosten: {total_cost}€\nGesamtpreis: {total_price}€"
         )
-
-        # Löschen von vorherigen Nachrichten (falls vorhanden)
-        async for message in interaction.message.channel.history(limit=2):
-            if message != result_msg:
-                await message.delete()
 
 
 # !mix Befehl
@@ -104,7 +98,7 @@ async def mix(ctx):
 
     # Wenn der Button geklickt wird, zeige Produkt- und Zutatenauswahl an
     async def button_callback(interaction: discord.Interaction):
-        # Neue Ansicht mit Produkt- und Zutatenauswahl erstellen
+        # Neue Ansicht mit Produkt- und Zutatenauswahl + Berechnen-Button erstellen
         produkt_select = ProduktSelect()
         zutat_select = ZutatSelect()
         calculate_button = CalculateButton()
