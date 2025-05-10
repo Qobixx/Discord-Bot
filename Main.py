@@ -36,6 +36,7 @@ class ProduktSelect(Select):
         self.view.selected_product = self.values[0]  # Speichern der Auswahl
         # Keine Nachricht senden
 
+
 # Funktionsweise der Auswahl für Zutaten
 class ZutatSelect(Select):
     def __init__(self):
@@ -46,6 +47,7 @@ class ZutatSelect(Select):
         # Zutatwert speichern, wenn es ausgewählt wird
         self.view.selected_ingredient = self.values[0]  # Speichern der Auswahl
         # Keine Nachricht senden
+
 
 # Berechnen-Button
 class CalculateButton(Button):
@@ -78,6 +80,7 @@ class CalculateButton(Button):
             ephemeral=True
         )
 
+
 # !mix Befehl
 @bot.command()
 async def mix(ctx):
@@ -90,13 +93,12 @@ async def mix(ctx):
 
     # Wenn der Button geklickt wird, zeige Produkt- und Zutatenauswahl an
     async def button_callback(interaction: discord.Interaction):
+        # Neue Ansicht mit Produkt- und Zutatenauswahl erstellen
         produkt_select = ProduktSelect()
         zutat_select = ZutatSelect()
-
-        # Berechnen-Button wird erst nach der Auswahl der Produkt- und Zutatenauswahl erstellt
         calculate_button = CalculateButton()
 
-        # Eine neue View mit Auswahl und Berechnen-Button erstellen
+        # Neue View für Produkt- und Zutatenauswahl + Berechnen-Button erstellen
         new_view = View()
         new_view.add_item(produkt_select)
         new_view.add_item(zutat_select)
@@ -112,6 +114,7 @@ async def mix(ctx):
 
     # Sende eine Nachricht mit dem Button
     await ctx.send("Klicke auf den Button, um ein Produkt und eine Zutat auszuwählen:", view=view)
+
 
 @bot.event
 async def on_ready():
