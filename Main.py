@@ -1,86 +1,77 @@
 import discord
 from discord.ext import commands
-from discord.ui import Button, View, Select  # Entferne SelectOption
-import requests
-import os
+from discord.ui import Button, View, Select, SelectOption
 from dotenv import load_dotenv
+import os
 
+# Lade die Umgebungsvariablen aus der .env-Datei
 load_dotenv()
 
-TOKEN = os.getenv("DISCORD_TOKEN")  # Dein Bot-Token
-FLASK_API_URL = "http://localhost:5000/calculate"  # Flask-API URL
 
-bot = commands.Bot(command_prefix="!", intents=discord.Intents.default())
 
-# Produkt- und Substanz-Optionen (direkt definieren, ohne SelectOption)
-product_options = [
-    discord.SelectOption(label="OG Kush", value="OgKush"),
-    discord.SelectOption(label="Meth", value="Meth"),
-    discord.SelectOption(label="Cocaine", value="Cocaine")
-]
+# Hole den Token aus der Umgebungsvariable
+TOKEN = os.getenv("DISCORD_TOKEN")
 
-substance_options = [
-    discord.SelectOption(label="Sugar", value="Sugar"),
-    discord.SelectOption(label="Acetone", value="Acetone"),
-    discord.SelectOption(label="Baking Soda", value="Baking Soda"),
-    discord.SelectOption(label="Lemon", value="Lemon")
-]
+# Bot initialisieren
+intents = discord.Intents.default()
+intents.message_content = True
+bot = commands.Bot(command_prefix="!", intents=intents)
 
+# Beispiel für eine einfache Zutatenauswahl und Berechnung
+# Du kannst hier die Zutaten oder Produkte nach deinem Bedarf anpassen.
+products = {
+    "OgKush": {"cost": 100, "price": 200},
+    "Meht": {"cost": 150, "price": 300},
+    "Cocain": {"cost": 500, "price": 1000},
+}
+
+# Funktionsweise der Auswahl
 class ProductSelect(Select):
     def __init__(self):
-        super().__init__(placeholder="Wähle ein Produkt", options=product_options)
+        options = [SelectOption(label=product, value=product) for product in products]
+        super().__init__(placeholder="Wähle ein Produkt", options=options)
 
     async def callback(self, interaction: discord.Interaction):
-        interaction.user.selected_product = self.values[0]
-        await interaction.response.send_message(f"Produkt {self.values[0]} ausgewählt!", ephemeral=True)
+        # Produktname aus der Auswahl
+        product = self.values[0]
+        cost = products[product]["cost"]
+        price = products[product]["price"]
 
-class SubstanceSelect(Select):
-    def __init__(self):
-        super().__init__(placeholder="Wähle Zutaten", options=substance_options, max_values=3)
+        # Sende eine Nachricht mit den berechneten Kosten und Preis
+        await interaction.response.send_message(
+            f"Du hast {product} ausgewählt.\nKosten: {cost}€\nVerkaufspreis: {price}€",
+            ephemeral=True,
+        )
 
-    async def callback(self, interaction: discord.Interaction):
-        interaction.user.selected_substances = self.values
-        await interaction.response.send_message(f"Zutaten: {', '.join(self.values)} ausgewählt!", ephemeral=True)
 
-class CalculateButton(Button):
-    def __init__(self):
-        super().__init__(label="Berechnen", style=discord.ButtonStyle.primary)
-
-    async def callback(self, interaction: discord.Interaction):
-        product = interaction.user.selected_product
-        substances = interaction.user.selected_substances
-
-        # Anfrage an Flask-API senden
-        response = requests.post(FLASK_API_URL, json={"product": product, "substances": substances})
-        
-        if response.status_code == 200:
-            data = response.json()
-            embed = discord.Embed(title=f"Preisberechnung für {data['product']}", color=0x00ff00)
-            embed.add_field(name="Kosten", value=f"{data['total_cost']} €", inline=True)
-            embed.add_field(name="Verkaufspreis", value=f"{data['sell_price']} €", inline=True)
-            embed.add_field(name="Gewinn", value=f"{data['profit']} €", inline=True)
-            await interaction.response.send_message(embed=embed, ephemeral=True)
-        else:
-            await interaction.response.send_message("Fehler bei der Berechnung. Bitte versuche es später erneut.", ephemeral=True)
-
+# !mix Befehl
 @bot.command()
 async def mix(ctx):
-    # Hier fügst du jetzt die GUI für den Benutzer hinzu
+    # Button erstellen
+    button = Button(label="Wähle ein Produkt!", style=discord.ButtonStyle.primary)
+
+    # View erstellen und den Button hinzufügen
     view = View()
-    product_select = ProductSelect()
-    substance_select = SubstanceSelect()
-    calculate_button = CalculateButton()
+    view.add_item(button)
 
-    # Füge die GUI-Elemente zur Ansicht hinzu
-    view.add_item(product_select)
-    view.add_item(substance_select)
-    view.add_item(calculate_button)
+    # Wenn der Button geklickt wird, zeige das Dropdown-Menü an
+    async def button_callback(interaction: discord.Interaction):
+        # Zeige das Dropdown-Menü an, nachdem der Button geklickt wurde
+        select = ProductSelect()
+        view = View()
+        view.add_item(select)
+        await interaction.response.send_message("Wähle ein Produkt:", view=view)
 
-    # Sende die Nachricht im Discord-Chat mit der GUI
-    await ctx.send("Wähle ein Produkt und die Zutaten aus, um den Preis zu berechnen:", view=view)
+    button.callback = button_callback
 
+    # Sende eine Nachricht mit dem Button
+    await ctx.send("Klicke den Button, um ein Produkt auszuwählen:", view=view)
+
+
+# Bot bereit
 @bot.event
 async def on_ready():
     print(f"Bot ist online als {bot.user}")
+
 
 bot.run(TOKEN)
