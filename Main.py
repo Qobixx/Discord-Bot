@@ -1,9 +1,11 @@
 import discord
 from discord.ext import commands
-from discord.ui import View, Select
+from discord.ui import Modal, TextInput, View
+from discord import app_commands
 from dotenv import load_dotenv
 import os
 
+# .env laden
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
 
@@ -23,58 +25,60 @@ zutaten = {
     "Filter": {"cost": 1, "price": 3},
 }
 
-class MixView(View):
+# Modal-Klasse
+class MixModal(Modal):
     def __init__(self):
-        super().__init__(timeout=None)
-        self.produkt = None
-        self.zutat = None
-
-        self.produkt_select = Select(
-            placeholder="🧪 Produkt wählen",
-            options=[discord.SelectOption(label=p) for p in produkte],
-            min_values=1, max_values=1
+        super().__init__(title="Wähle ein Produkt und eine Zutat")
+        
+        # Produkt-Auswahl
+        self.produkt_input = TextInput(
+            label="Wähle ein Produkt", 
+            placeholder="OgKush, Meht, Cocain",
+            required=True
         )
-        self.produkt_select.callback = self.produkt_chosen
-
-        self.zutat_select = Select(
-            placeholder="🧂 Zutat wählen",
-            options=[discord.SelectOption(label=z) for z in zutaten],
-            min_values=1, max_values=1
+        self.add_item(self.produkt_input)
+        
+        # Zutat-Auswahl
+        self.zutat_input = TextInput(
+            label="Wähle eine Zutat", 
+            placeholder="Gasolin, Paper, Filter",
+            required=True
         )
-        self.zutat_select.callback = self.zutat_chosen
+        self.add_item(self.zutat_input)
+    
+    async def callback(self, interaction: discord.Interaction):
+        produkt = self.produkt_input.value
+        zutat = self.zutat_input.value
+        
+        # Überprüfe, ob Produkt und Zutat existieren
+        if produkt in produkte and zutat in zutaten:
+            p = produkte[produkt]
+            z = zutaten[zutat]
 
-        self.add_item(self.produkt_select)
-        self.add_item(self.zutat_select)
+            ges_cost = p["cost"] + z["cost"]
+            ges_price = p["price"] + z["price"]
 
-    async def produkt_chosen(self, interaction: discord.Interaction):
-        self.produkt = self.produkt_select.values[0]
-        await self.try_send_result(interaction)
-
-    async def zutat_chosen(self, interaction: discord.Interaction):
-        self.zutat = self.zutat_select.values[0]
-        await self.try_send_result(interaction)
-
-    async def try_send_result(self, interaction: discord.Interaction):
-        if self.produkt and self.zutat:
-            p = produkte[self.produkt]
-            z = zutaten[self.zutat]
-
-            total_cost = p["cost"] + z["cost"]
-            total_price = p["price"] + z["price"]
-
+            # Sende Ergebnis an den Benutzer
             await interaction.response.send_message(
                 f"✅ **Auswahl abgeschlossen:**\n"
-                f"🔹 Produkt: {self.produkt} (Kosten: {p['cost']}€, Preis: {p['price']}€)\n"
-                f"🔹 Zutat: {self.zutat} (Kosten: {z['cost']}€, Preis: {z['price']}€)\n\n"
-                f"💰 **Gesamtkosten:** {total_cost}€\n"
-                f"💵 **Gesamtpreis:** {total_price}€",
+                f"🔹 Produkt: {produkt} (Kosten: {p['cost']}€, Preis: {p['price']}€)\n"
+                f"🔹 Zutat: {zutat} (Kosten: {z['cost']}€, Preis: {z['price']}€)\n\n"
+                f"💰 **Gesamtkosten:** {ges_cost}€\n"
+                f"💵 **Gesamtpreis:** {ges_price}€",
+                ephemeral=True
+            )
+        else:
+            await interaction.response.send_message(
+                "❌ Fehler: Ungültige Auswahl für Produkt oder Zutat.",
                 ephemeral=True
             )
 
+# !mix Befehl
 @bot.command()
 async def mix(ctx):
-    view = MixView()
-    await ctx.send("🔧 Bitte wähle Produkt und Zutat aus:", view=view)
+    # Erstelle Modal und sende es
+    modal = MixModal()
+    await ctx.send_modal(modal)
 
 @bot.event
 async def on_ready():
