@@ -114,7 +114,7 @@ async def mix(ctx):
 
             # Addiere die Kosten für die Zutaten
             for zutat in zutaten:
-                total_cost += zutaten[zutat]["cost"]
+                total_cost += zutaten[zutat]["cost"]  # Hier wird die Zutat als String behandelt, daher kein Indexfehler
 
             # Gesamtkosten anzeigen
             await interaction.response.send_message(f"Die Gesamtkosten betragen {total_cost}€.", ephemeral=True)
