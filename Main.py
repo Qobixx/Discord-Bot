@@ -45,4 +45,30 @@ class ProductSelect(Select):
 @bot.command()
 async def mix(ctx):
     # Button erstellen
-    button = Button(label="Wähle ein Produkt!", style=discord
+    button = Button(label="Wähle ein Produkt!", style=discord.ButtonStyle.primary)
+
+    # View erstellen und den Button hinzufügen
+    view = View()
+    view.add_item(button)
+
+    # Wenn der Button geklickt wird, zeige das Dropdown-Menü an
+    async def button_callback(interaction: discord.Interaction):
+        # Zeige das Dropdown-Menü an, nachdem der Button geklickt wurde
+        select = ProductSelect()
+        view = View()
+        view.add_item(select)
+        await interaction.response.send_message("Wähle ein Produkt:", view=view)
+
+    button.callback = button_callback
+
+    # Sende eine Nachricht mit dem Button
+    await ctx.send("Klicke den Button, um ein Produkt auszuwählen:", view=view)
+
+
+# Bot bereit
+@bot.event
+async def on_ready():
+    print(f"Bot ist online als {bot.user}")
+
+# Starte den Bot mit dem Token
+bot.run(TOKEN)
