@@ -15,31 +15,39 @@ intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# Beispiel für eine einfache Zutatenauswahl und Berechnung
+# Beispiel für Produkte und Zutaten
+produkte = {
+    "OgKush": {"cost": 100, "price": 200},
+    "Meht": {"cost": 150, "price": 300},
+    "Cocain": {"cost": 500, "price": 1000},
+}
+
 zutaten = {
     "Gasolin": {"cost": 50, "price": 100},
     "Zucker": {"cost": 20, "price": 50},
     "Salz": {"cost": 10, "price": 20},
 }
 
-# Zutatenauswahl mit mehreren Optionen
+# Produkt-Auswahl
+class ProduktSelect(Select):
+    def __init__(self):
+        options = [discord.SelectOption(label=produkt, value=produkt) for produkt in produkte]
+        super().__init__(placeholder="Wähle ein Produkt", options=options)
+
+    async def callback(self, interaction: discord.Interaction):
+        self.product = self.values[0]
+        await interaction.response.send_message(f"Du hast das Produkt '{self.product}' ausgewählt.", ephemeral=True)
+
+
+# Zutatenauswahl ohne mehrere Auswahlmöglichkeiten
 class ZutatSelect(Select):
     def __init__(self):
         options = [discord.SelectOption(label=zutat, value=zutat) for zutat in zutaten]
-        super().__init__(placeholder="Wähle eine oder mehrere Zutaten", options=options, min_values=1, max_values=len(zutaten))
+        super().__init__(placeholder="Wähle eine Zutat", options=options)
 
     async def callback(self, interaction: discord.Interaction):
-        selected_zutaten = self.values
-        total_cost = 0
-        total_price = 0
-        for zutat in selected_zutaten:
-            total_cost += zutaten[zutat]["cost"]
-            total_price += zutaten[zutat]["price"]
-
-        await interaction.response.send_message(
-            f"Du hast die folgenden Zutaten ausgewählt: {', '.join(selected_zutaten)}.\nGesamtkosten: {total_cost}€\nGesamtverkaufspreis: {total_price}€",
-            ephemeral=True,
-        )
+        self.zutat = self.values[0]
+        await interaction.response.send_message(f"Du hast die Zutat '{self.zutat}' ausgewählt.", ephemeral=True)
 
 
 # !mix Befehl
@@ -53,14 +61,16 @@ async def mix(ctx):
     view.add_item(button)
 
     async def button_callback(interaction: discord.Interaction):
-        # Dropdown-Menü für Zutatenauswahl erstellen
+        # Dropdown-Menü für Produkte und Zutaten
+        produkt_select = ProduktSelect()
         zutat_select = ZutatSelect()
 
-        # View für Zutatenauswahl
+        # View für Produkt- und Zutatenauswahl
         view = View()
+        view.add_item(produkt_select)
         view.add_item(zutat_select)
 
-        await interaction.response.send_message("Wähle eine oder mehrere Zutaten:", view=view)
+        await interaction.response.send_message("Wähle ein Produkt und eine Zutat:", view=view)
 
     button.callback = button_callback
 
