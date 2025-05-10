@@ -34,7 +34,7 @@ class ProduktSelect(Select):
     async def callback(self, interaction: discord.Interaction):
         # Produktwert speichern, wenn es ausgewählt wird
         self.view.selected_product = self.values[0] 
-        await interaction.response.send_message(f"Du hast das Produkt **{self.view.selected_product}** ausgewählt! Bitte wähle nun eine Zutat.", ephemeral=True)
+       
 
 # Funktionsweise der Auswahl für Zutaten
 class ZutatSelect(Select):
@@ -45,7 +45,7 @@ class ZutatSelect(Select):
     async def callback(self, interaction: discord.Interaction):
         # Zutatwert speichern, wenn es ausgewählt wird
         self.view.selected_ingredient = self.values[0] 
-        await interaction.response.send_message(f"Du hast die Zutat **{self.view.selected_ingredient}** ausgewählt! Klicke nun auf 'Berechnen', um die Kosten zu sehen.", ephemeral=True)
+        
 
 # Berechnen-Button
 class CalculateButton(Button):
