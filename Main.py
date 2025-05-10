@@ -1,9 +1,8 @@
 import discord
 from discord.ext import commands
-from discord.ui import Modal, TextInput, View
-from discord import app_commands
-import os
+from discord.ui import Button, View, Select, SelectOption
 from dotenv import load_dotenv
+import os
 
 # .env laden
 load_dotenv()
@@ -25,60 +24,61 @@ zutaten = {
     "Filter": {"cost": 1, "price": 3},
 }
 
-# Modal-Klasse
-class MixModal(Modal):
+# Funktionsweise der Auswahl für Produkte
+class ProduktSelect(Select):
     def __init__(self):
-        super().__init__(title="Wähle ein Produkt und eine Zutat")
-        
-        # Produkt-Auswahl
-        self.produkt_input = TextInput(
-            label="Wähle ein Produkt", 
-            placeholder="OgKush, Meht, Cocain",
-            required=True
-        )
-        self.add_item(self.produkt_input)
-        
-        # Zutat-Auswahl
-        self.zutat_input = TextInput(
-            label="Wähle eine Zutat", 
-            placeholder="Gasolin, Paper, Filter",
-            required=True
-        )
-        self.add_item(self.zutat_input)
-    
+        options = [SelectOption(label=produkt, value=produkt) for produkt in produkte]
+        super().__init__(placeholder="Wähle ein Produkt", options=options)
+
     async def callback(self, interaction: discord.Interaction):
-        produkt = self.produkt_input.value
-        zutat = self.zutat_input.value
-        
-        # Überprüfe, ob Produkt und Zutat existieren
-        if produkt in produkte and zutat in zutaten:
-            p = produkte[produkt]
-            z = zutaten[zutat]
+        produkt = self.values[0]
+        cost = produkte[produkt]["cost"]
+        price = produkte[produkt]["price"]
 
-            ges_cost = p["cost"] + z["cost"]
-            ges_price = p["price"] + z["price"]
+        # Sende eine Nachricht mit den berechneten Kosten und Preis
+        await interaction.response.send_message(
+            f"Du hast {produkt} ausgewählt.\nKosten: {cost}€\nVerkaufspreis: {price}€",
+            ephemeral=True,
+        )
 
-            # Sende Ergebnis an den Benutzer
-            await interaction.response.send_message(
-                f"✅ **Auswahl abgeschlossen:**\n"
-                f"🔹 Produkt: {produkt} (Kosten: {p['cost']}€, Preis: {p['price']}€)\n"
-                f"🔹 Zutat: {zutat} (Kosten: {z['cost']}€, Preis: {z['price']}€)\n\n"
-                f"💰 **Gesamtkosten:** {ges_cost}€\n"
-                f"💵 **Gesamtpreis:** {ges_price}€",
-                ephemeral=True
-            )
-        else:
-            await interaction.response.send_message(
-                "❌ Fehler: Ungültige Auswahl für Produkt oder Zutat.",
-                ephemeral=True
-            )
+# Funktionsweise der Auswahl für Zutaten
+class ZutatSelect(Select):
+    def __init__(self):
+        options = [SelectOption(label=zutat, value=zutat) for zutat in zutaten]
+        super().__init__(placeholder="Wähle eine Zutat", options=options)
+
+    async def callback(self, interaction: discord.Interaction):
+        zutat = self.values[0]
+        cost = zutaten[zutat]["cost"]
+        price = zutaten[zutat]["price"]
+
+        # Sende eine Nachricht mit den berechneten Kosten und Preis
+        await interaction.response.send_message(
+            f"Du hast {zutat} ausgewählt.\nKosten: {cost}€\nVerkaufspreis: {price}€",
+            ephemeral=True,
+        )
 
 # !mix Befehl
 @bot.command()
 async def mix(ctx):
-    # Erstelle Modal und sende es
-    modal = MixModal()
-    await ctx.send_modal(modal)
+    # Button erstellen
+    button = Button(label="Wähle ein Produkt!", style=discord.ButtonStyle.primary)
+
+    # View erstellen und den Button hinzufügen
+    view = View()
+    view.add_item(button)
+
+    # Wenn der Button geklickt wird, zeige die Produkt- und Zutatenauswahl an
+    async def button_callback(interaction: discord.Interaction):
+        produkt_select = ProduktSelect()
+        view = View()
+        view.add_item(produkt_select)
+        await interaction.response.send_message("Wähle ein Produkt:", view=view)
+
+    button.callback = button_callback
+
+    # Sende eine Nachricht mit dem Button
+    await ctx.send("Klicke den Button, um ein Produkt auszuwählen:", view=view)
 
 @bot.event
 async def on_ready():
