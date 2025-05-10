@@ -1,10 +1,9 @@
 import discord
 from discord.ext import commands
-from discord.ui import Select, View
+from discord.ui import View, Select
 from dotenv import load_dotenv
 import os
 
-# .env laden
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
 
@@ -12,7 +11,6 @@ intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# Produkt- und Zutatendaten
 produkte = {
     "OgKush": {"cost": 100, "price": 200},
     "Meht": {"cost": 150, "price": 300},
@@ -25,62 +23,59 @@ zutaten = {
     "Filter": {"cost": 1, "price": 3},
 }
 
-# Speichert Auswahl pro User
-user_auswahl = {}
-
-# Produkt-Dropdown
-class ProduktDropdown(Select):
+class MixView(View):
     def __init__(self):
-        options = [discord.SelectOption(label=name, value=name) for name in produkte]
-        super().__init__(placeholder="Wähle ein Produkt", options=options)
+        super().__init__(timeout=None)
+        self.produkt = None
+        self.zutat = None
 
-    async def callback(self, interaction: discord.Interaction):
-        user_id = interaction.user.id
-        user_auswahl.setdefault(user_id, {})
-        user_auswahl[user_id]["produkt"] = self.values[0]
-        await sende_auswertung(interaction, user_id)
-
-# Zutaten-Dropdown
-class ZutatDropdown(Select):
-    def __init__(self):
-        options = [discord.SelectOption(label=name, value=name) for name in zutaten]
-        super().__init__(placeholder="Wähle eine Zutat", options=options)
-
-    async def callback(self, interaction: discord.Interaction):
-        user_id = interaction.user.id
-        user_auswahl.setdefault(user_id, {})
-        user_auswahl[user_id]["zutat"] = self.values[0]
-        await sende_auswertung(interaction, user_id)
-
-# Funktion zur Ergebnisanzeige
-async def sende_auswertung(interaction, user_id):
-    auswahl = user_auswahl[user_id]
-    if "produkt" in auswahl and "zutat" in auswahl:
-        produkt = auswahl["produkt"]
-        zutat = auswahl["zutat"]
-        p = produkte[produkt]
-        z = zutaten[zutat]
-
-        ges_cost = p["cost"] + z["cost"]
-        ges_price = p["price"] + z["price"]
-
-        await interaction.response.send_message(
-            f"🔹 **Produkt**: {produkt} (Kosten: {p['cost']}€, Preis: {p['price']}€)\n"
-            f"🔹 **Zutat**: {zutat} (Kosten: {z['cost']}€, Preis: {z['price']}€)\n\n"
-            f"💰 **Gesamtkosten:** {ges_cost}€\n"
-            f"💵 **Gesamtpreis:** {ges_price}€",
-            ephemeral=True
+        self.produkt_select = Select(
+            placeholder="🧪 Produkt wählen",
+            options=[discord.SelectOption(label=p) for p in produkte],
+            min_values=1, max_values=1
         )
+        self.produkt_select.callback = self.produkt_chosen
 
-# !mix Befehl
+        self.zutat_select = Select(
+            placeholder="🧂 Zutat wählen",
+            options=[discord.SelectOption(label=z) for z in zutaten],
+            min_values=1, max_values=1
+        )
+        self.zutat_select.callback = self.zutat_chosen
+
+        self.add_item(self.produkt_select)
+        self.add_item(self.zutat_select)
+
+    async def produkt_chosen(self, interaction: discord.Interaction):
+        self.produkt = self.produkt_select.values[0]
+        await self.try_send_result(interaction)
+
+    async def zutat_chosen(self, interaction: discord.Interaction):
+        self.zutat = self.zutat_select.values[0]
+        await self.try_send_result(interaction)
+
+    async def try_send_result(self, interaction: discord.Interaction):
+        if self.produkt and self.zutat:
+            p = produkte[self.produkt]
+            z = zutaten[self.zutat]
+
+            total_cost = p["cost"] + z["cost"]
+            total_price = p["price"] + z["price"]
+
+            await interaction.response.send_message(
+                f"✅ **Auswahl abgeschlossen:**\n"
+                f"🔹 Produkt: {self.produkt} (Kosten: {p['cost']}€, Preis: {p['price']}€)\n"
+                f"🔹 Zutat: {self.zutat} (Kosten: {z['cost']}€, Preis: {z['price']}€)\n\n"
+                f"💰 **Gesamtkosten:** {total_cost}€\n"
+                f"💵 **Gesamtpreis:** {total_price}€",
+                ephemeral=True
+            )
+
 @bot.command()
 async def mix(ctx):
-    view = View()
-    view.add_item(ProduktDropdown())
-    view.add_item(ZutatDropdown())
-    await ctx.send("🔧 Wähle ein Produkt und eine Zutat aus:", view=view)
+    view = MixView()
+    await ctx.send("🔧 Bitte wähle Produkt und Zutat aus:", view=view)
 
-# Bot ready
 @bot.event
 async def on_ready():
     print(f"✅ Bot ist online als {bot.user}")
