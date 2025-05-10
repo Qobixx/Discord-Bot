@@ -53,6 +53,11 @@ class CalculateButton(Button):
         self.ingredient = ingredient
 
     async def callback(self, interaction: discord.Interaction):
+        # Überprüfen, ob Produkt und Zutat ausgewählt sind
+        if not self.product or not self.ingredient:
+            await interaction.response.send_message("Bitte wähle sowohl ein Produkt als auch eine Zutat aus, bevor du auf 'Berechnen' klickst.", ephemeral=True)
+            return
+
         # Berechnung der Gesamtkosten und Gesamtpreis
         product_cost = produkte[self.product]["cost"]
         product_price = produkte[self.product]["price"]
