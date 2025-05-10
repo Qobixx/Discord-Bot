@@ -23,6 +23,7 @@ zutaten = {
     "Gasolin": {"cost": 10, "price": 20},
     "Paper": {"cost": 2, "price": 5},
     "Filter": {"cost": 1, "price": 3},
+    "Water": {"cost": 5, "price": 10}
 }
 
 # Funktionsweise der Auswahl für Produkte
@@ -38,17 +39,17 @@ class ProduktSelect(Select):
         await interaction.response.send_message(f"Du hast das Produkt **{self.view.selected_product}** ausgewählt.", ephemeral=True)
 
 
-# Funktionsweise der Auswahl für Zutaten
+# Funktionsweise der Auswahl für Zutaten (mit Mehrfachauswahl)
 class ZutatSelect(Select):
     def __init__(self):
         options = [discord.SelectOption(label=zutat, value=zutat) for zutat in zutaten]
-        super().__init__(placeholder="Wähle eine Zutat", options=options)
+        super().__init__(placeholder="Wähle eine oder mehrere Zutaten", options=options, min_values=1, max_values=len(zutaten), row=1, multiple=True)
 
     async def callback(self, interaction: discord.Interaction):
         # Zutatwert speichern, wenn es ausgewählt wird
-        self.view.selected_ingredient = self.values[0]  # Speichern der Auswahl
+        self.view.selected_ingredients = self.values  # Speichern der Auswahl
         # Nachricht senden, welche Auswahl getroffen wurde
-        await interaction.response.send_message(f"Du hast die Zutat **{self.view.selected_ingredient}** ausgewählt.", ephemeral=True)
+        await interaction.response.send_message(f"Du hast die Zutaten {', '.join(self.view.selected_ingredients)} ausgewählt.", ephemeral=True)
 
 
 # Berechnen-Button
@@ -57,30 +58,33 @@ class CalculateButton(Button):
         super().__init__(label="Berechnen", style=discord.ButtonStyle.success)
 
     async def callback(self, interaction: discord.Interaction):
-        # Überprüfen, ob sowohl Produkt als auch Zutat ausgewählt wurden
-        if not hasattr(self.view, "selected_product") or not hasattr(self.view, "selected_ingredient"):
+        # Überprüfen, ob sowohl Produkt als auch Zutat(en) ausgewählt wurden
+        if not hasattr(self.view, "selected_product") or not hasattr(self.view, "selected_ingredients"):
             await interaction.response.send_message(
-                "Bitte wähle sowohl ein Produkt als auch eine Zutat aus, bevor du auf 'Berechnen' klickst.",
+                "Bitte wähle sowohl ein Produkt als auch eine Zutat(en) aus, bevor du auf 'Berechnen' klickst.",
                 ephemeral=True
             )
             return
 
         product = self.view.selected_product
-        ingredient = self.view.selected_ingredient
+        ingredients = self.view.selected_ingredients
 
         # Berechnung der Gesamtkosten und Gesamtpreis
         product_cost = produkte[product]["cost"]
         product_price = produkte[product]["price"]
-        ingredient_cost = zutaten[ingredient]["cost"]
-        ingredient_price = zutaten[ingredient]["price"]
+        total_cost = product_cost
+        total_price = product_price
 
-        # Gesamtkosten und Gesamtpreis
-        total_cost = product_cost + ingredient_cost
-        total_price = product_price + ingredient_price
+        # Kosten und Preise für alle Zutaten addieren
+        for ingredient in ingredients:
+            ingredient_cost = zutaten[ingredient]["cost"]
+            ingredient_price = zutaten[ingredient]["price"]
+            total_cost += ingredient_cost
+            total_price += ingredient_price
 
         # Berechnete Werte zurückgeben
         await interaction.response.send_message(
-            f"Du hast das Produkt **{product}** und die Zutat **{ingredient}** ausgewählt.\n"
+            f"Du hast das Produkt **{product}** und die Zutaten {', '.join(ingredients)} ausgewählt.\n"
             f"Gesamtkosten: {total_cost}€\nGesamtpreis: {total_price}€"
         )
 
@@ -110,14 +114,14 @@ async def mix(ctx):
 
         # Nachricht senden, dass der Benutzer ein Produkt und eine Zutat wählen soll
         await interaction.response.send_message(
-            "Wähle ein Produkt und eine Zutat aus, und klicke dann auf 'Berechnen', um die Preise zu sehen.",
+            "Wähle ein Produkt und eine oder mehrere Zutaten aus, und klicke dann auf 'Berechnen', um die Preise zu sehen.",
             view=new_view
         )
 
     button.callback = button_callback
 
     # Sende eine Nachricht mit dem Button
-    await ctx.send("Klicke auf den Button, um ein Produkt und eine Zutat auszuwählen:", view=view)
+    await ctx.send("Klicke auf den Button, um ein Produkt und eine oder mehrere Zutaten auszuwählen:", view=view)
 
 
 @bot.event
