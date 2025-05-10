@@ -99,12 +99,25 @@ async def mix(ctx):
 
         # Berechnung durchführen, wenn der "Berechnen"-Button gedrückt wird
         async def calculate_callback(interaction: discord.Interaction):
-            # Setze die Auswahl für Produkt und Zutaten
-            calculate_button.product = produkt_select.values[0]  # Produkt auswählen
-            calculate_button.zutaten = zutat_select.values  # Zutaten auswählen
+            # Überprüfen, ob sowohl Produkt als auch Zutaten ausgewählt wurden
+            if not hasattr(produkt_select, 'values') or not hasattr(zutat_select, 'values'):
+                await interaction.response.send_message("Bitte wähle sowohl ein Produkt als auch eine Zutat aus, bevor du auf 'Berechnen' klickst.", ephemeral=True)
+                return
 
-            # Berechnung durchführen und Nachricht senden
-            await calculate_button.callback(interaction)
+            # Die Produkt- und Zutatenauswahl wird in der Berechnung berücksichtigt
+            product = produkt_select.values[0]
+            zutaten = zutat_select.values
+
+            # Berechnung des Gesamtpreises
+            product_cost = produkte[product]["cost"]
+            total_cost = product_cost
+
+            # Addiere die Kosten für die Zutaten
+            for zutat in zutaten:
+                total_cost += zutaten[zutat]["cost"]
+
+            # Gesamtkosten anzeigen
+            await interaction.response.send_message(f"Die Gesamtkosten betragen {total_cost}€.", ephemeral=True)
 
         # Setzen des calculate_callback für den Button
         calculate_button.callback = calculate_callback
