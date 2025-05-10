@@ -32,15 +32,9 @@ class ProduktSelect(Select):
         super().__init__(placeholder="Wähle ein Produkt", options=options)
 
     async def callback(self, interaction: discord.Interaction):
-        produkt = self.values[0]
-        cost = produkte[produkt]["cost"]
-        price = produkte[produkt]["price"]
-
-        # Sende eine Nachricht mit den berechneten Kosten und Preis
-        await interaction.response.send_message(
-            f"Du hast {produkt} ausgewählt.\nKosten: {cost}€\nVerkaufspreis: {price}€",
-            ephemeral=True,
-        )
+        self.product = self.values[0]  # Das ausgewählte Produkt speichern
+        # Speicher die Auswahl für später
+        await interaction.response.send_message(f"Du hast das Produkt **{self.product}** ausgewählt!", ephemeral=True)
 
 # Funktionsweise der Auswahl für Zutaten
 class ZutatSelect(Select):
@@ -50,15 +44,10 @@ class ZutatSelect(Select):
         super().__init__(placeholder="Wähle eine Zutat", options=options)
 
     async def callback(self, interaction: discord.Interaction):
-        zutat = self.values[0]
-        cost = zutaten[zutat]["cost"]
-        price = zutaten[zutat]["price"]
+        self.ingredient = self.values[0]  # Die ausgewählte Zutat speichern
+        # Speicher die Auswahl für später
+        await interaction.response.send_message(f"Du hast die Zutat **{self.ingredient}** ausgewählt!", ephemeral=True)
 
-        # Sende eine Nachricht mit den berechneten Kosten und Preis
-        await interaction.response.send_message(
-            f"Du hast {zutat} ausgewählt.\nKosten: {cost}€\nVerkaufspreis: {price}€",
-            ephemeral=True,
-        )
 
 # !mix Befehl
 @bot.command()
@@ -87,6 +76,26 @@ async def mix(ctx):
 
     # Sende eine Nachricht mit dem Button
     await ctx.send("Klicke den Button, um ein Produkt und eine Zutat auszuwählen:", view=view)
+
+
+# Berechnung der Gesamtkosten und des Verkaufspreises
+@bot.event
+async def on_interaction(interaction: discord.Interaction):
+    if isinstance(interaction.data["component_type"], discord.ui.Select):
+        # Wenn sowohl Produkt als auch Zutat ausgewählt wurden
+        try:
+            # Kosten und Preise der ausgewählten Produkte und Zutaten
+            product = produkte[interaction.data["product"]]
+            ingredient = zutaten[interaction.data["ingredient"]]
+
+            # Berechnung der Gesamtkosten und des Verkaufspreises
+            total_cost = product["cost"] + ingredient["cost"]
+            total_price = product["price"] + ingredient["price"]
+
+            # Antwort zurücksenden
+            await interaction.response.send_message(f"Gesamtberechnung:\nGesamtkosten: {total_cost}€\nGesamtpreis: {total_price}€", ephemeral=True)
+        except Exception as e:
+            print("Fehler bei der Berechnung:", e)
 
 @bot.event
 async def on_ready():
