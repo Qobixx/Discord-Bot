@@ -47,7 +47,7 @@ class ZutatSelect(Select):
 
 # Berechnen-Button
 class CalculateButton(Button):
-    def __init__(self, product, ingredient):
+    def __init__(self, product=None, ingredient=None):
         super().__init__(label="Berechnen", style=discord.ButtonStyle.success)
         self.product = product
         self.ingredient = ingredient
@@ -91,8 +91,7 @@ async def mix(ctx):
         zutat_select = ZutatSelect()
 
         # Berechnen-Button wird erst nach der Auswahl der Produkt- und Zutatenauswahl erstellt
-        # Hier speichern wir `None` als Platzhalter, die später aktualisiert werden
-        calculate_button = CalculateButton(None, None)  # Berechnen-Button mit Platzhaltern
+        calculate_button = CalculateButton()  # Berechnen-Button mit Platzhaltern
 
         # Eine neue View mit Auswahl und Berechnen-Button erstellen
         view = View()
@@ -106,15 +105,16 @@ async def mix(ctx):
             view=view
         )
 
-        # Der Berechnen-Button wird aktualisiert, wenn der Benutzer eine Auswahl trifft
+        # Der Berechnen-Button wird erst dann mit den gewählten Optionen aktualisiert
         async def update_calculate_button():
             selected_product = produkt_select.values[0] if produkt_select.values else None
             selected_ingredient = zutat_select.values[0] if zutat_select.values else None
 
-            # Setze die Produkt- und Zutatenauswahl im Berechnen-Button
+            # Aktualisieren der Produkt- und Zutatenauswahl im Berechnen-Button
             calculate_button.product = selected_product
             calculate_button.ingredient = selected_ingredient
 
+        # Regelmäßig die Berechnungs-Button zu aktualisieren
         await update_calculate_button()
 
     button.callback = button_callback
