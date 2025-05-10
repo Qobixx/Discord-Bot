@@ -47,8 +47,10 @@ class ZutatSelect(Select):
 
 # Berechnen-Button
 class CalculateButton(Button):
-    def __init__(self):
+    def __init__(self, product, ingredient):
         super().__init__(label="Berechnen", style=discord.ButtonStyle.success)
+        self.product = product
+        self.ingredient = ingredient
 
     async def callback(self, interaction: discord.Interaction):
         # Berechnung der Gesamtkosten und Gesamtpreis
@@ -82,10 +84,11 @@ async def mix(ctx):
     async def button_callback(interaction: discord.Interaction):
         produkt_select = ProduktSelect()
         zutat_select = ZutatSelect()
-        
-        # Berechnen-Button erst nach Auswahl anzeigen
-        calculate_button = CalculateButton()  # Berechnen-Button
-        
+
+        # Berechnen-Button wird erst nach der Auswahl der Produkt- und Zutatenauswahl erstellt
+        # Hier speichern wir `None` als Platzhalter, die später aktualisiert werden
+        calculate_button = CalculateButton(None, None)  # Berechnen-Button mit Platzhaltern
+
         # Eine neue View mit Auswahl und Berechnen-Button erstellen
         view = View()
         view.add_item(produkt_select)
@@ -97,6 +100,17 @@ async def mix(ctx):
             "Wähle ein Produkt und eine Zutat aus, und klicke dann auf 'Berechnen', um die Preise zu sehen.",
             view=view
         )
+
+        # Der Berechnen-Button wird aktualisiert, wenn der Benutzer eine Auswahl trifft
+        async def update_calculate_button():
+            selected_product = produkt_select.values[0] if produkt_select.values else None
+            selected_ingredient = zutat_select.values[0] if zutat_select.values else None
+
+            # Setze die Produkt- und Zutatenauswahl im Berechnen-Button
+            calculate_button.product = selected_product
+            calculate_button.ingredient = selected_ingredient
+
+        await update_calculate_button()
 
     button.callback = button_callback
 
