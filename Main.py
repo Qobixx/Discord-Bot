@@ -54,23 +54,28 @@ class ZutatSelect(Select):
 
 # Berechnung und Ausgabe des Gesamtpreises
 class CalculateButton(Button):
-    def __init__(self):
+    def __init__(self, produkt_select, zutat_select):
         super().__init__(label="Berechnen", style=discord.ButtonStyle.success)
+        self.produkt_select = produkt_select
+        self.zutat_select = zutat_select
 
     async def callback(self, interaction: discord.Interaction):
         # Überprüfen, ob sowohl Produkt als auch Zutaten ausgewählt wurden
-        if not hasattr(self, 'product') or not hasattr(self, 'zutaten'):
+        if not hasattr(self.produkt_select, 'values') or not hasattr(self.zutat_select, 'values'):
             await interaction.response.send_message("Bitte wähle sowohl ein Produkt als auch eine Zutat aus, bevor du auf 'Berechnen' klickst.", ephemeral=True)
             return
 
+        # Die Produkt- und Zutatenauswahl wird in der Berechnung berücksichtigt
+        product = self.produkt_select.values[0]
+        zutaten = self.zutat_select.values
+
         # Berechnung des Gesamtpreises
-        product_cost = produkte[self.product]["cost"]
+        product_cost = produkte[product]["cost"]
         total_cost = product_cost
 
         # Addiere die Kosten für die Zutaten
-        for zutat in self.zutaten:
-            if zutat in zutaten:  # Zugriff auf die Zutat im zutaten Dictionary
-                total_cost += zutaten[zutat]["cost"]
+        for zutat_name in zutaten:
+            total_cost += zutaten[zutat_name]["cost"]
 
         # Gesamtkosten anzeigen
         await interaction.response.send_message(f"Die Gesamtkosten betragen {total_cost}€.", ephemeral=True)
@@ -90,7 +95,9 @@ async def mix(ctx):
         # Dropdown-Menü für Produkt und Zutaten
         produkt_select = ProduktSelect()
         zutat_select = ZutatSelect()
-        calculate_button = CalculateButton()
+
+        # Berechnen-Button mit den Produkt- und Zutatenauswahlen
+        calculate_button = CalculateButton(produkt_select, zutat_select)
 
         # View für Produkt- und Zutatenauswahl
         selection_view = View()
@@ -111,6 +118,5 @@ async def mix(ctx):
 @bot.event
 async def on_ready():
     print(f"Bot ist online als {bot.user}")
-
 
 bot.run(TOKEN)
