@@ -63,17 +63,21 @@ class CalculateButton(Button):
             await interaction.response.send_message("Bitte wähle sowohl ein Produkt als auch eine Zutat aus, bevor du auf 'Berechnen' klickst.", ephemeral=True)
             return
         
-        # Berechne die Gesamtkosten
-        product_cost = produkte[self.view.product]["cost"]
+        # Die Produkt- und Zutatenauswahl wird in der Berechnung berücksichtigt
+        product = self.view.product
+        zutaten = self.view.zutaten
+
+        # Berechnung des Gesamtpreises
+        product_cost = produkte[product]["cost"]
         total_cost = product_cost
         
-        # Kosten für jede ausgewählte Zutat
-        for zutat in self.view.zutaten:
+        # Addiere die Kosten für die Zutaten
+        for zutat in zutaten:
             # Zugriff auf die Kosten der Zutat im zutaten Dictionary
             if zutat in zutaten:
                 total_cost += zutaten[zutat]["cost"]
 
-        # Zeige die Gesamtkosten an
+        # Gesamtkosten anzeigen
         await interaction.response.send_message(f"Die Gesamtkosten betragen {total_cost}€.", ephemeral=True)
 
 
@@ -137,6 +141,5 @@ async def mix(ctx):
 @bot.event
 async def on_ready():
     print(f"Bot ist online als {bot.user}")
-
 
 bot.run(TOKEN)
