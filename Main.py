@@ -33,8 +33,8 @@ class ProduktSelect(Select):
 
     async def callback(self, interaction: discord.Interaction):
         # Produktwert speichern, wenn es ausgewählt wird
-        self.view.selected_product = self.values[0] 
-       
+        self.view.selected_product = self.values[0]  # Speichern der Auswahl
+        # Keine Nachricht senden
 
 # Funktionsweise der Auswahl für Zutaten
 class ZutatSelect(Select):
@@ -44,8 +44,8 @@ class ZutatSelect(Select):
 
     async def callback(self, interaction: discord.Interaction):
         # Zutatwert speichern, wenn es ausgewählt wird
-        self.view.selected_ingredient = self.values[0] 
-        
+        self.view.selected_ingredient = self.values[0]  # Speichern der Auswahl
+        # Keine Nachricht senden
 
 # Berechnen-Button
 class CalculateButton(Button):
