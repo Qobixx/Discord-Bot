@@ -35,6 +35,7 @@ class ProduktSelect(Select):
         super().__init__(placeholder="Wähle ein Produkt", options=options)
 
     async def callback(self, interaction: discord.Interaction):
+        # Speichern der Auswahl des Produkts
         self.product = self.values[0]
         await interaction.response.send_message(f"Du hast das Produkt '{self.product}' ausgewählt.", ephemeral=True)
 
@@ -46,6 +47,7 @@ class ZutatSelect(Select):
         super().__init__(placeholder="Wähle eine oder mehrere Zutaten", options=options, min_values=1, max_values=len(zutaten))
 
     async def callback(self, interaction: discord.Interaction):
+        # Speichern der Auswahl der Zutaten
         self.zutaten = self.values
         await interaction.response.send_message(f"Du hast die Zutaten {', '.join(self.zutaten)} ausgewählt.", ephemeral=True)
 
@@ -95,10 +97,14 @@ async def mix(ctx):
         view.add_item(zutat_select)
         view.add_item(calculate_button)
 
-        # Setze die Rückrufe für das Produkt und die Zutaten in den Buttons
-        calculate_button.product = produkt_select.values[0]  # Produkt auswählen
-        calculate_button.zutaten = zutat_select.values  # Zutaten auswählen
+        # Wenn der Button "Berechnen" gedrückt wird, werden die ausgewählten Werte an das Berechnungsfeld übergeben
+        async def calculate_callback(interaction: discord.Interaction):
+            calculate_button.product = produkt_select.values[0]  # Produkt auswählen
+            calculate_button.zutaten = zutat_select.values  # Zutaten auswählen
+            await calculate_button.callback(interaction)
 
+        calculate_button.callback = calculate_callback
+        
         await interaction.response.send_message("Wähle ein Produkt und eine oder mehrere Zutaten, dann klicke auf 'Berechnen':", view=view)
 
     button.callback = button_callback
