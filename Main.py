@@ -103,28 +103,27 @@ async def mix(ctx):
         selection_view.add_item(zutat_select)
         selection_view.add_item(calculate_button)
 
-        # Berechnung durchführen, wenn der "Berechnen"-Button gedrückt wird
         async def calculate_callback(interaction: discord.Interaction):
-            # Überprüfen, ob sowohl Produkt als auch Zutaten ausgewählt wurden
-            if not hasattr(produkt_select, 'values') or not hasattr(zutat_select, 'values'):
-                await interaction.response.send_message("Bitte wähle sowohl ein Produkt als auch eine Zutat aus, bevor du auf 'Berechnen' klickst.", ephemeral=True)
-                return
+    # Überprüfen, ob sowohl Produkt als auch Zutaten ausgewählt wurden
+    if not hasattr(produkt_select, 'values') or not hasattr(zutat_select, 'values'):
+        await interaction.response.send_message("Bitte wähle sowohl ein Produkt als auch eine Zutat aus, bevor du auf 'Berechnen' klickst.", ephemeral=True)
+        return
 
-            # Die Produkt- und Zutatenauswahl wird in der Berechnung berücksichtigt
-            product = produkt_select.values[0]
-            zutaten = zutat_select.values
+    # Die Produkt- und Zutatenauswahl wird in der Berechnung berücksichtigt
+    product = produkt_select.values[0]
+    zutaten = zutat_select.values
 
-            # Berechnung des Gesamtpreises
-            product_cost = produkte[product]["cost"]
-            total_cost = product_cost
+    # Berechnung des Gesamtpreises
+    product_cost = produkte[product]["cost"]
+    total_cost = product_cost
 
-            # Addiere die Kosten für die Zutaten
-            for zutat in zutaten:
-                if zutat in zutaten:  # Zugriff auf die Zutat im zutaten Dictionary
-                    total_cost += zutaten[zutat]["cost"]
+    # Addiere die Kosten für die Zutaten
+    for zutat_name in zutaten:  # Gehe durch jede ausgewählte Zutat
+        total_cost += zutaten[zutat_name]["cost"]  # Zugriff auf die Zutat im zutaten Dictionary
 
-            # Gesamtkosten anzeigen
-            await interaction.response.send_message(f"Die Gesamtkosten betragen {total_cost}€.", ephemeral=True)
+    # Gesamtkosten anzeigen
+    await interaction.response.send_message(f"Die Gesamtkosten betragen {total_cost}€.", ephemeral=True)
+
 
         # Setzen des calculate_callback für den Button
         calculate_button.callback = calculate_callback
