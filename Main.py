@@ -1,122 +1,84 @@
 import discord
 from discord.ext import commands
-from discord.ui import Button, View, Select
+from discord.ui import Button, View, Modal, TextInput
 from dotenv import load_dotenv
 import os
+import requests
+from datetime import datetime
 
 # Lade die Umgebungsvariablen aus der .env-Datei
 load_dotenv()
 
+
+
 # Hole den Token aus der Umgebungsvariable
 TOKEN = os.getenv("DISCORD_TOKEN")
+WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
 
-# Bot initialisieren
+# Discord Bot
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# Beispiel für Produkte und Zutaten
-produkte = {
-    "OgKush": {"cost": 100, "price": 200},
-    "Meht": {"cost": 150, "price": 300},
-    "Cocain": {"cost": 500, "price": 1000},
-}
+# Wetterdaten für 4 Tage abrufen
+def get_4_day_forecast(city):
+    url = f"http://api.openweathermap.org/data/2.5/forecast?q={city}&appid={WEATHER_API_KEY}&units=metric&lang=de"
+    res = requests.get(url)
+    if res.status_code != 200:
+        return None
+    data = res.json()
+    forecast = []
 
-zutaten = {
-    "Gasolin": {"cost": 50, "price": 100},
-    "Zucker": {"cost": 20, "price": 50},
-    "Salz": {"cost": 10, "price": 20},
-}
+    for entry in data["list"]:
+        dt_txt = entry["dt_txt"]
+        if "12:00:00" in dt_txt:  # nur die Mittagsdaten (1x pro Tag)
+            day = datetime.strptime(dt_txt, "%Y-%m-%d %H:%M:%S").strftime("%A, %d.%m.")
+            temp = entry["main"]["temp"]
+            desc = entry["weather"][0]["description"].capitalize()
+            icon = entry["weather"][0]["icon"]
+            icon_url = f"http://openweathermap.org/img/wn/{icon}@2x.png"
+            forecast.append((day, temp, desc, icon_url))
+            if len(forecast) == 4:
+                break
+    return forecast
 
-# Produkt-Auswahl
-class ProduktSelect(Select):
+# Modal für Stadteingabe
+class WeatherModal(Modal):
     def __init__(self):
-        options = [discord.SelectOption(label=produkt, value=produkt) for produkt in produkte]
-        super().__init__(placeholder="Wähle ein Produkt", options=options)
+        super().__init__(title="🌦️ Wettervorhersage")
+        self.city = TextInput(label="Stadtname", placeholder="z. B. Berlin")
+        self.add_item(self.city)
 
-    async def callback(self, interaction: discord.Interaction):
-        # Speichern der Auswahl des Produkts in der Interaktionsantwort
-        self.product = self.values[0]
-        await interaction.response.send_message(f"Du hast das Produkt '{self.product}' ausgewählt.", ephemeral=True)
-
-
-# Zutatenauswahl mit mehreren Auswahlmöglichkeiten
-class ZutatSelect(Select):
-    def __init__(self):
-        options = [discord.SelectOption(label=zutat, value=zutat) for zutat in zutaten]
-        super().__init__(placeholder="Wähle eine oder mehrere Zutaten", options=options, min_values=1, max_values=len(zutaten))
-
-    async def callback(self, interaction: discord.Interaction):
-        # Speichern der Auswahl der Zutaten in der Interaktionsantwort
-        self.zutaten = self.values
-        await interaction.response.send_message(f"Du hast die Zutaten {', '.join(self.zutaten)} ausgewählt.", ephemeral=True)
-
-
-# Berechnung und Ausgabe des Gesamtpreises
-class CalculateButton(Button):
-    def __init__(self, produkt_select, zutat_select):
-        super().__init__(label="Berechnen", style=discord.ButtonStyle.success)
-        self.produkt_select = produkt_select
-        self.zutat_select = zutat_select
-
-    async def callback(self, interaction: discord.Interaction):
-        # Überprüfen, ob sowohl Produkt als auch Zutaten ausgewählt wurden
-        if not hasattr(self.produkt_select, 'values') or not hasattr(self.zutat_select, 'values'):
-            await interaction.response.send_message("Bitte wähle sowohl ein Produkt als auch eine Zutat aus, bevor du auf 'Berechnen' klickst.", ephemeral=True)
+    async def on_submit(self, interaction: discord.Interaction):
+        city_name = self.city.value.strip()
+        forecast = get_4_day_forecast(city_name)
+        if not forecast:
+            await interaction.response.send_message("❌ Stadt nicht gefunden oder API-Fehler.", ephemeral=True)
             return
 
-        # Die Produkt- und Zutatenauswahl wird in der Berechnung berücksichtigt
-        product = self.produkt_select.values[0]
-        zutaten = self.zutat_select.values
+        embed = discord.Embed(title=f"📅 Wetter für {city_name.title()} – 4 Tage Vorschau", color=0x1abc9c)
+        for day, temp, desc, icon_url in forecast:
+            embed.add_field(name=day, value=f"{desc}, **{temp:.1f}°C**", inline=False)
+            embed.set_thumbnail(url=forecast[0][3])  # Icon vom ersten Tag
 
-        # Berechnung des Gesamtpreises
-        product_cost = produkte[product]["cost"]
-        total_cost = product_cost
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
-        # Addiere die Kosten für jede ausgewählte Zutat
-        for zutat_name in zutaten:
-            total_cost += zutaten[zutat_name]["cost"]  # Zugriff auf die Zutat im zutaten Dictionary
-
-        # Gesamtkosten anzeigen
-        await interaction.response.send_message(f"Die Gesamtkosten betragen {total_cost}€.", ephemeral=True)
-
-
-# !mix Befehl
+# Button anzeigen
 @bot.command()
-async def mix(ctx):
-    # Button erstellen
-    button = Button(label="Öffne Auswahlfenster!", style=discord.ButtonStyle.primary)
-
-    # View erstellen und den Button hinzufügen
+async def wetter(ctx):
+    btn = Button(label="Wetter abfragen", style=discord.ButtonStyle.primary)
     view = View()
-    view.add_item(button)
+    view.add_item(btn)
 
     async def button_callback(interaction: discord.Interaction):
-        # Dropdown-Menü für Produkt und Zutaten
-        produkt_select = ProduktSelect()
-        zutat_select = ZutatSelect()
+        await interaction.response.send_modal(WeatherModal())
 
-        # Berechnen-Button mit den Produkt- und Zutatenauswahlen
-        calculate_button = CalculateButton(produkt_select, zutat_select)
+    btn.callback = button_callback
+    await ctx.send("🌤️ Klicke auf den Button, um eine Wettervorhersage zu bekommen:", view=view)
 
-        # View für Produkt- und Zutatenauswahl
-        selection_view = View()
-        selection_view.add_item(produkt_select)
-        selection_view.add_item(zutat_select)
-        selection_view.add_item(calculate_button)
-
-        await interaction.response.send_message("Wähle ein Produkt und eine oder mehrere Zutaten, dann klicke auf 'Berechnen':", view=selection_view)
-
-    # Setzen des button_callback für den Button
-    button.callback = button_callback
-
-    # Sende eine Nachricht mit dem Button
-    await ctx.send("Klicke den Button, um das Auswahlfenster zu öffnen:", view=view)
-
-
-# Bot bereit
+# Bot gestartet
 @bot.event
 async def on_ready():
-    print(f"Bot ist online als {bot.user}")
+    print(f"✅ Bot online als {bot.user}")
 
 bot.run(TOKEN)
