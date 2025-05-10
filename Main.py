@@ -99,8 +99,10 @@ async def mix(ctx):
 
         # Berechnung durchführen, wenn der "Berechnen"-Button gedrückt wird
         async def calculate_callback(interaction: discord.Interaction):
+            # Setze die Auswahl für Produkt und Zutaten
             calculate_button.product = produkt_select.values[0]  # Produkt auswählen
             calculate_button.zutaten = zutat_select.values  # Zutaten auswählen
+
             # Berechnung durchführen und Nachricht senden
             await calculate_button.callback(interaction)
 
