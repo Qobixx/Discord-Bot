@@ -69,7 +69,9 @@ class CalculateButton(Button):
         
         # Kosten für jede ausgewählte Zutat
         for zutat in self.zutaten:
-            total_cost += zutaten[zutat]["cost"]
+            # Zugriff auf die Kosten der Zutat im zutaten Dictionary
+            if zutat in zutaten:
+                total_cost += zutaten[zutat]["cost"]
 
         # Zeige die Gesamtkosten an
         await interaction.response.send_message(f"Die Gesamtkosten betragen {total_cost}€.", ephemeral=True)
