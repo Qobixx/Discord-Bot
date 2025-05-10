@@ -35,7 +35,7 @@ class ProduktSelect(Select):
         super().__init__(placeholder="Wähle ein Produkt", options=options)
 
     async def callback(self, interaction: discord.Interaction):
-        # Speichern der Auswahl des Produkts
+        # Speichern der Auswahl des Produkts in der Interaktionsantwort
         self.product = self.values[0]
         await interaction.response.send_message(f"Du hast das Produkt '{self.product}' ausgewählt.", ephemeral=True)
 
@@ -47,7 +47,7 @@ class ZutatSelect(Select):
         super().__init__(placeholder="Wähle eine oder mehrere Zutaten", options=options, min_values=1, max_values=len(zutaten))
 
     async def callback(self, interaction: discord.Interaction):
-        # Speichern der Auswahl der Zutaten
+        # Speichern der Auswahl der Zutaten in der Interaktionsantwort
         self.zutaten = self.values
         await interaction.response.send_message(f"Du hast die Zutaten {', '.join(self.zutaten)} ausgewählt.", ephemeral=True)
 
@@ -92,10 +92,10 @@ async def mix(ctx):
         calculate_button = CalculateButton()
 
         # View für Produkt- und Zutatenauswahl
-        view = View()
-        view.add_item(produkt_select)
-        view.add_item(zutat_select)
-        view.add_item(calculate_button)
+        selection_view = View()
+        selection_view.add_item(produkt_select)
+        selection_view.add_item(zutat_select)
+        selection_view.add_item(calculate_button)
 
         # Wenn der Button "Berechnen" gedrückt wird, werden die ausgewählten Werte an das Berechnungsfeld übergeben
         async def calculate_callback(interaction: discord.Interaction):
@@ -105,7 +105,7 @@ async def mix(ctx):
 
         calculate_button.callback = calculate_callback
         
-        await interaction.response.send_message("Wähle ein Produkt und eine oder mehrere Zutaten, dann klicke auf 'Berechnen':", view=view)
+        await interaction.response.send_message("Wähle ein Produkt und eine oder mehrere Zutaten, dann klicke auf 'Berechnen':", view=selection_view)
 
     button.callback = button_callback
 
