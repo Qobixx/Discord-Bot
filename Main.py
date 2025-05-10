@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from discord.ui import Button, View, Select, SelectOption
+from discord.ui import Button, View, Select
 from dotenv import load_dotenv
 import os
 
@@ -28,10 +28,10 @@ zutaten = {
     "Salz": {"cost": 10, "price": 20},
 }
 
-# Zutatenauswahl (jede Zutat einzeln)
+# Zutatenauswahl
 class ZutatSelect(Select):
     def __init__(self):
-        options = [SelectOption(label=zutat, value=zutat) for zutat in zutaten]
+        options = [discord.SelectOption(label=zutat, value=zutat) for zutat in zutaten]
         super().__init__(placeholder="Wähle eine Zutat", options=options)
 
     async def callback(self, interaction: discord.Interaction):
@@ -46,7 +46,7 @@ class ZutatSelect(Select):
 # Produkt auswählen
 class ProduktSelect(Select):
     def __init__(self):
-        options = [SelectOption(label=produkt, value=produkt) for produkt in produkte]
+        options = [discord.SelectOption(label=produkt, value=produkt) for produkt in produkte]
         super().__init__(placeholder="Wähle ein Produkt", options=options)
 
     async def callback(self, interaction: discord.Interaction):
