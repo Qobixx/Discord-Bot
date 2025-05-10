@@ -35,7 +35,7 @@ class ProduktSelect(Select):
     async def callback(self, interaction: discord.Interaction):
         # Produktwert speichern, wenn es ausgewählt wird
         self.view.selected_product = self.values[0]  # Speichern der Auswahl
-        # Keine Nachricht senden
+        # Keine Nachricht senden, keine Reaktion
 
 
 # Funktionsweise der Auswahl für Zutaten
@@ -47,7 +47,7 @@ class ZutatSelect(Select):
     async def callback(self, interaction: discord.Interaction):
         # Zutatwert speichern, wenn es ausgewählt wird
         self.view.selected_ingredient = self.values[0]  # Speichern der Auswahl
-        # Keine Nachricht senden
+        # Keine Nachricht senden, keine Reaktion
 
 
 # Berechnen-Button
@@ -86,8 +86,8 @@ class CalculateButton(Button):
             f"Gesamtkosten: {total_cost}€\nGesamtpreis: {total_price}€"
         )
 
-        # Alle Nachrichten, die vor der Berechnung gesendet wurden, löschen
-        for message in interaction.message.channel.history(limit=2):
+        # Löschen von vorherigen Nachrichten (falls vorhanden)
+        async for message in interaction.message.channel.history(limit=2):
             if message != result_msg:
                 await message.delete()
 
