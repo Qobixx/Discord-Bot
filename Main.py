@@ -7,8 +7,6 @@ import os
 # Lade die Umgebungsvariablen aus der .env-Datei
 load_dotenv()
 
-
-
 # Hole den Token aus der Umgebungsvariable
 TOKEN = os.getenv("DISCORD_TOKEN")
 
@@ -20,9 +18,9 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 # Beispiel für eine einfache Zutatenauswahl und Berechnung
 # Du kannst hier die Zutaten oder Produkte nach deinem Bedarf anpassen.
 products = {
-    "OgKush": {"cost": 100, "price": 200},
-    "Meht": {"cost": 150, "price": 300},
-    "Cocain": {"cost": 500, "price": 1000},
+    "Produkt A": {"cost": 100, "price": 200},
+    "Produkt B": {"cost": 150, "price": 300},
+    "Produkt C": {"cost": 500, "price": 1000},
 }
 
 # Funktionsweise der Auswahl
@@ -42,7 +40,6 @@ class ProductSelect(Select):
             f"Du hast {product} ausgewählt.\nKosten: {cost}€\nVerkaufspreis: {price}€",
             ephemeral=True,
         )
-
 
 # !mix Befehl
 @bot.command()
@@ -73,5 +70,5 @@ async def mix(ctx):
 async def on_ready():
     print(f"Bot ist online als {bot.user}")
 
-
+# Starte den Bot mit dem Token
 bot.run(TOKEN)
