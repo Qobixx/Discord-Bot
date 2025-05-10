@@ -4,71 +4,69 @@ from discord.ui import Button, View, Select
 from dotenv import load_dotenv
 import os
 
-# Lade die Umgebungsvariablen aus der .env-Datei
+# .env laden
 load_dotenv()
-
-# Hole den Token aus der Umgebungsvariable
 TOKEN = os.getenv("DISCORD_TOKEN")
 
-# Bot initialisieren
+# Bot Setup
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# Beispiel für eine einfache Zutatenauswahl und Berechnung
-# Du kannst hier die Zutaten oder Produkte nach deinem Bedarf anpassen.
-products = {
-    "Produkt A": {"cost": 100, "price": 200},
-    "Produkt B": {"cost": 150, "price": 300},
-    "Produkt C": {"cost": 500, "price": 1000},
+# Produkte und Zutaten (jeweils mit cost und price)
+produkte = {
+    "OgKush": {"cost": 100, "price": 200},
+    "Meht": {"cost": 150, "price": 300},
+    "Cocain": {"cost": 500, "price": 1000},
 }
 
-# Funktionsweise der Auswahl
-class ProductSelect(Select):
+zutaten = {
+    "Gasolin": {"cost": 10, "price": 20},
+    "Paper": {"cost": 2, "price": 5},
+    "Filter": {"cost": 1, "price": 3},
+}
+
+# Auswahl-Menü für beides
+class AuswahlSelect(Select):
     def __init__(self):
-        options = [discord.SelectOption(label=product, value=product) for product in products]
-        super().__init__(placeholder="Wähle ein Produkt", options=options)
+        options = []
+        for name, data in produkte.items():
+            options.append(discord.SelectOption(label=f"Produkt: {name}", value=f"produkt:{name}"))
+        for name, data in zutaten.items():
+            options.append(discord.SelectOption(label=f"Zutat: {name}", value=f"zutat:{name}"))
+
+        super().__init__(placeholder="Wähle ein Produkt oder eine Zutat", options=options)
 
     async def callback(self, interaction: discord.Interaction):
-        # Produktname aus der Auswahl
-        product = self.values[0]
-        cost = products[product]["cost"]
-        price = products[product]["price"]
+        typ, name = self.values[0].split(":")
+        data = produkte[name] if typ == "produkt" else zutaten[name]
 
-        # Sende eine Nachricht mit den berechneten Kosten und Preis
         await interaction.response.send_message(
-            f"Du hast {product} ausgewählt.\nKosten: {cost}€\nVerkaufspreis: {price}€",
-            ephemeral=True,
+            f"**{typ.capitalize()}**: {name}\n"
+            f"- Kosten: {data['cost']}€\n"
+            f"- Preis: {data['price']}€",
+            ephemeral=True
         )
 
-# !mix Befehl
+# !auswahl Befehl
 @bot.command()
-async def mix(ctx):
-    # Button erstellen
-    button = Button(label="Wähle ein Produkt!", style=discord.ButtonStyle.primary)
-
-    # View erstellen und den Button hinzufügen
+async def auswahl(ctx):
+    button = Button(label="Auswahl öffnen", style=discord.ButtonStyle.primary)
     view = View()
     view.add_item(button)
 
-    # Wenn der Button geklickt wird, zeige das Dropdown-Menü an
     async def button_callback(interaction: discord.Interaction):
-        # Zeige das Dropdown-Menü an, nachdem der Button geklickt wurde
-        select = ProductSelect()
-        view = View()
-        view.add_item(select)
-        await interaction.response.send_message("Wähle ein Produkt:", view=view)
+        select = AuswahlSelect()
+        select_view = View()
+        select_view.add_item(select)
+        await interaction.response.send_message("Wähle aus:", view=select_view)
 
     button.callback = button_callback
+    await ctx.send("Klicke auf den Button, um ein Produkt oder eine Zutat auszuwählen:", view=view)
 
-    # Sende eine Nachricht mit dem Button
-    await ctx.send("Klicke den Button, um ein Produkt auszuwählen:", view=view)
-
-
-# Bot bereit
+# Start
 @bot.event
 async def on_ready():
-    print(f"Bot ist online als {bot.user}")
+    print(f"✅ Bot ist online als {bot.user}")
 
-# Starte den Bot mit dem Token
 bot.run(TOKEN)
