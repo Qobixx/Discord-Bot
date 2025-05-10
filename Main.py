@@ -97,16 +97,19 @@ async def mix(ctx):
         selection_view.add_item(zutat_select)
         selection_view.add_item(calculate_button)
 
-        # Wenn der Button "Berechnen" gedrückt wird, werden die ausgewählten Werte an das Berechnungsfeld übergeben
+        # Berechnung durchführen, wenn der "Berechnen"-Button gedrückt wird
         async def calculate_callback(interaction: discord.Interaction):
             calculate_button.product = produkt_select.values[0]  # Produkt auswählen
             calculate_button.zutaten = zutat_select.values  # Zutaten auswählen
+            # Berechnung durchführen und Nachricht senden
             await calculate_button.callback(interaction)
 
+        # Setzen des calculate_callback für den Button
         calculate_button.callback = calculate_callback
         
         await interaction.response.send_message("Wähle ein Produkt und eine oder mehrere Zutaten, dann klicke auf 'Berechnen':", view=selection_view)
 
+    # Setzen des button_callback für den Button
     button.callback = button_callback
 
     # Sende eine Nachricht mit dem Button
