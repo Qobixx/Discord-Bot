@@ -50,6 +50,29 @@ class ZutatSelect(Select):
         await interaction.response.send_message(f"Du hast die Zutaten {', '.join(self.zutaten)} ausgewählt.", ephemeral=True)
 
 
+# Berechnung und Ausgabe des Gesamtpreises
+class CalculateButton(Button):
+    def __init__(self):
+        super().__init__(label="Berechnen", style=discord.ButtonStyle.success)
+
+    async def callback(self, interaction: discord.Interaction):
+        # Berechnung des Gesamtpreises
+        if not hasattr(self, 'product') or not hasattr(self, 'zutaten'):
+            await interaction.response.send_message("Bitte wähle sowohl ein Produkt als auch eine Zutat aus, bevor du auf 'Berechnen' klickst.", ephemeral=True)
+            return
+        
+        # Berechne die Gesamtkosten
+        product_cost = produkte[self.product]["cost"]
+        total_cost = product_cost
+        
+        # Kosten für jede ausgewählte Zutat
+        for zutat in self.zutaten:
+            total_cost += zutaten[zutat]["cost"]
+
+        # Zeige die Gesamtkosten an
+        await interaction.response.send_message(f"Die Gesamtkosten betragen {total_cost}€.", ephemeral=True)
+
+
 # !mix Befehl
 @bot.command()
 async def mix(ctx):
@@ -64,13 +87,19 @@ async def mix(ctx):
         # Dropdown-Menü für Produkt und Zutaten
         produkt_select = ProduktSelect()
         zutat_select = ZutatSelect()
+        calculate_button = CalculateButton()
 
         # View für Produkt- und Zutatenauswahl
         view = View()
         view.add_item(produkt_select)
         view.add_item(zutat_select)
+        view.add_item(calculate_button)
 
-        await interaction.response.send_message("Wähle ein Produkt und eine oder mehrere Zutaten:", view=view)
+        # Setze die Rückrufe für das Produkt und die Zutaten in den Buttons
+        calculate_button.product = produkt_select.values[0]  # Produkt auswählen
+        calculate_button.zutaten = zutat_select.values  # Zutaten auswählen
+
+        await interaction.response.send_message("Wähle ein Produkt und eine oder mehrere Zutaten, dann klicke auf 'Berechnen':", view=view)
 
     button.callback = button_callback
 
