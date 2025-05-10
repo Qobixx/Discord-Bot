@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from discord.ui import Button, View, Select, SelectOption
+from discord.ui import Button, View, Select, SelectOption  # Korrigierter Import
 import requests
 import os
 from dotenv import load_dotenv
@@ -14,16 +14,16 @@ bot = commands.Bot(command_prefix="!", intents=discord.Intents.default())
 
 # Produkt- und Substanz-Optionen
 product_options = [
-    SelectOption(label="OG Kush", value="OgKush"),
-    SelectOption(label="Meth", value="Meth"),
-    SelectOption(label="Cocaine", value="Cocaine")
+    discord.SelectOption(label="OG Kush", value="OgKush"),
+    discord.SelectOption(label="Meth", value="Meth"),
+    discord.SelectOption(label="Cocaine", value="Cocaine")
 ]
 
 substance_options = [
-    SelectOption(label="Sugar", value="Sugar"),
-    SelectOption(label="Acetone", value="Acetone"),
-    SelectOption(label="Baking Soda", value="Baking Soda"),
-    SelectOption(label="Lemon", value="Lemon")
+    discord.SelectOption(label="Sugar", value="Sugar"),
+    discord.SelectOption(label="Acetone", value="Acetone"),
+    discord.SelectOption(label="Baking Soda", value="Baking Soda"),
+    discord.SelectOption(label="Lemon", value="Lemon")
 ]
 
 class ProductSelect(Select):
@@ -66,19 +66,3 @@ class CalculateButton(Button):
 
 @bot.command()
 async def mix(ctx):
-    view = View()
-    product_select = ProductSelect()
-    substance_select = SubstanceSelect()
-    calculate_button = CalculateButton()
-
-    view.add_item(product_select)
-    view.add_item(substance_select)
-    view.add_item(calculate_button)
-
-    await ctx.send("Wähle ein Produkt und die Zutaten aus, um den Preis zu berechnen:", view=view)
-
-@bot.event
-async def on_ready():
-    print(f"Bot ist online als {bot.user}")
-
-bot.run(TOKEN)
