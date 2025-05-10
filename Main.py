@@ -3,6 +3,7 @@ from discord.ext import commands
 from discord.ui import Button, View, Select
 from dotenv import load_dotenv
 import os
+import asyncio
 
 # .env laden
 load_dotenv()
@@ -57,7 +58,13 @@ class CalculateButton(Button):
     async def callback(self, interaction: discord.Interaction):
         # Überprüfen, ob sowohl Produkt als auch Zutat ausgewählt wurden
         if not hasattr(self.view, "selected_product") or not hasattr(self.view, "selected_ingredient"):
-            await interaction.response.send_message("Bitte wähle sowohl ein Produkt als auch eine Zutat aus, bevor du auf 'Berechnen' klickst.", ephemeral=True)
+            # Wenn nicht beide ausgewählt sind, eine Nachricht senden und diese löschen
+            no_selection_msg = await interaction.response.send_message(
+                "Bitte wähle sowohl ein Produkt als auch eine Zutat aus, bevor du auf 'Berechnen' klickst.",
+                ephemeral=True
+            )
+            await asyncio.sleep(3)
+            await no_selection_msg.delete()
             return
 
         product = self.view.selected_product
@@ -73,12 +80,16 @@ class CalculateButton(Button):
         total_cost = product_cost + ingredient_cost
         total_price = product_price + ingredient_price
 
-        # Berechnete Werte zurückgeben
-        await interaction.response.send_message(
+        # Berechnete Werte zurückgeben und alle anderen Nachrichten löschen
+        result_msg = await interaction.response.send_message(
             f"Du hast das Produkt **{product}** und die Zutat **{ingredient}** ausgewählt.\n"
-            f"Gesamtkosten: {total_cost}€\nGesamtpreis: {total_price}€",
-            ephemeral=True
+            f"Gesamtkosten: {total_cost}€\nGesamtpreis: {total_price}€"
         )
+
+        # Alle Nachrichten, die vor der Berechnung gesendet wurden, löschen
+        for message in interaction.message.channel.history(limit=2):
+            if message != result_msg:
+                await message.delete()
 
 
 # !mix Befehl
