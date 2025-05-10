@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from discord.ui import Button, View, Select
+from discord.ui import Select, View
 from dotenv import load_dotenv
 import os
 
@@ -8,12 +8,11 @@ import os
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
 
-# Bot Setup
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# Produkte und Zutaten (jeweils mit cost und price)
+# Daten
 produkte = {
     "OgKush": {"cost": 100, "price": 200},
     "Meht": {"cost": 150, "price": 300},
@@ -26,45 +25,65 @@ zutaten = {
     "Filter": {"cost": 1, "price": 3},
 }
 
-# Auswahl-Menü für beides
-class AuswahlSelect(Select):
-    def __init__(self):
-        options = []
-        for name, data in produkte.items():
-            options.append(discord.SelectOption(label=f"Produkt: {name}", value=f"produkt:{name}"))
-        for name, data in zutaten.items():
-            options.append(discord.SelectOption(label=f"Zutat: {name}", value=f"zutat:{name}"))
+# Globale Auswahl speichern
+user_auswahl = {}
 
-        super().__init__(placeholder="Wähle ein Produkt oder eine Zutat", options=options)
+# Produkt-Dropdown
+class ProduktDropdown(Select):
+    def __init__(self):
+        options = [
+            discord.SelectOption(label=name, value=name) for name in produkte
+        ]
+        super().__init__(placeholder="Wähle ein Produkt", options=options)
 
     async def callback(self, interaction: discord.Interaction):
-        typ, name = self.values[0].split(":")
-        data = produkte[name] if typ == "produkt" else zutaten[name]
+        user_id = interaction.user.id
+        user_auswahl.setdefault(user_id, {})
+        user_auswahl[user_id]['produkt'] = self.values[0]
+        await sende_auswertung(interaction, user_id)
+
+# Zutaten-Dropdown
+class ZutatDropdown(Select):
+    def __init__(self):
+        options = [
+            discord.SelectOption(label=name, value=name) for name in zutaten
+        ]
+        super().__init__(placeholder="Wähle eine Zutat", options=options)
+
+    async def callback(self, interaction: discord.Interaction):
+        user_id = interaction.user.id
+        user_auswahl.setdefault(user_id, {})
+        user_auswahl[user_id]['zutat'] = self.values[0]
+        await sende_auswertung(interaction, user_id)
+
+# Auswertung senden wenn beides gewählt
+async def sende_auswertung(interaction, user_id):
+    auswahl = user_auswahl[user_id]
+    if 'produkt' in auswahl and 'zutat' in auswahl:
+        produkt = auswahl['produkt']
+        zutat = auswahl['zutat']
+
+        p_data = produkte[produkt]
+        z_data = zutaten[zutat]
+
+        ges_cost = p_data['cost'] + z_data['cost']
+        ges_price = p_data['price'] + z_data['price']
 
         await interaction.response.send_message(
-            f"**{typ.capitalize()}**: {name}\n"
-            f"- Kosten: {data['cost']}€\n"
-            f"- Preis: {data['price']}€",
+            f"**Produkt**: {produkt} (Kosten: {p_data['cost']}€, Preis: {p_data['price']}€)\n"
+            f"**Zutat**: {zutat} (Kosten: {z_data['cost']}€, Preis: {z_data['price']}€)\n\n"
+            f"📦 **Gesamtkosten:** {ges_cost}€\n💰 **Gesamtpreis:** {ges_price}€",
             ephemeral=True
         )
 
-# !auswahl Befehl
+# Befehl starten
 @bot.command()
-async def auswahl(ctx):
-    button = Button(label="Auswahl öffnen", style=discord.ButtonStyle.primary)
+async def kombi(ctx):
     view = View()
-    view.add_item(button)
+    view.add_item(ProduktDropdown())
+    view.add_item(ZutatDropdown())
+    await ctx.send("Wähle ein Produkt und eine Zutat aus:", view=view)
 
-    async def button_callback(interaction: discord.Interaction):
-        select = AuswahlSelect()
-        select_view = View()
-        select_view.add_item(select)
-        await interaction.response.send_message("Wähle aus:", view=select_view)
-
-    button.callback = button_callback
-    await ctx.send("Klicke auf den Button, um ein Produkt oder eine Zutat auszuwählen:", view=view)
-
-# Start
 @bot.event
 async def on_ready():
     print(f"✅ Bot ist online als {bot.user}")
